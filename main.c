@@ -5,7 +5,6 @@
 *	Timothy Lizardi
 *	
 *
-* sean sucks asshole
 */
 
 #include <hidef.h>			 /* common defines and macros */
