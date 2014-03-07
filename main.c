@@ -10,7 +10,7 @@
 #include <hidef.h>			 /* common defines and macros */
 #include "derivative.h"		 /* derivative-specific definitions */
 #include <cstdio.h>
-#include "filter.h"
+//#include "filter.h"
 #define MAX_SPEED 200
 #define MIN_SPEED 250
 #define FRONT 0
@@ -148,7 +148,7 @@ void main(void) {
 	SYNR = 2;
 	REFDV = 0;
 
-	while(!CRGFLG & 0x08){}
+	while(!(CRGFLG &0x08)){}
 	CLKSEL |= 0x80;
 	
 	MCCTL = 0xCF;//Interrupt Enabled, Force Load, Enabled, P=16
@@ -172,7 +172,7 @@ void main(void) {
 		//I can call funtions outside the loop, but if the funtion has a control statement
 		//it gets stuck there
 		
-		/*forward();
+		forward();
 		right_stationary_turn();
 		forward();
 		right_pivot_turn();
@@ -187,9 +187,7 @@ void main(void) {
 		forward();
 		left_rolling_turn();
 		forward();
-		u_turn();*/
-	
-		 
+		u_turn();
 		
     } /* loop forever */
   /* please make sure that you never leave main */
@@ -305,24 +303,16 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
 			right_step_count--;
 			//u_turn_count++;
 		}
+	}
 	
 	
-	if(u_turn_count > 425){//MAX_SPEED == 20 this = 425; 15, 410
-	u_turn_count = 0;
-	u_turn_flag = 0;
-	//right_speed_final = MIN_SPEED;
-	//left_speed_final  = MIN_SPEED;
+	if(u_turn_count > 425){
+		//MAX_SPEED == 20 this = 425; 15, 410
+		u_turn_count = 0;
+		u_turn_flag = 0;
+		//right_speed_final = MIN_SPEED;
+		//left_speed_final  = MIN_SPEED;
 	}
 	 
 	PORTB = left_chars[leftPos] + right_chars[rightPos];
 }
-
-
-
-
-
-
-
-
-
-
