@@ -57,6 +57,16 @@ static int u_turn_count = 0;
 static int u_turn_flag = 0;
 static int turn_flag = 0;//Used to stop sensor reading and correction while turning
 
+static int forwardComplete = 1;
+
+static int rightSTComplete = 1;
+static int rightPTComplete = 1;
+static int rightRTComplete = 1;
+
+static int leftSTComplete = 1;
+static int leftPTComplete = 1;
+static int leftRTComplete = 1;
+
 static int right_wheel_backwards = 0;//Sets right wheel motion backwards
 static int left_wheel_backwards = 0;//Sets left wheel motion backwards
 
@@ -71,19 +81,18 @@ static char left_chars[8] = {0x08, 0x09, 0x01, 0x03, 0x02, 0x06, 0x04, 0x0C};
 
 
 void forward(){// forward one block
-
-	right_step_count = 200;//These values are guessed
-	left_step_count = 200;
-	while(right_step_count >=0 && left_step_count >=0){}
-	
-
+	right_step_count = 2000;//These values are guessed
+	left_step_count = 2000;
+	forwardComplete = 0;
+	while(forwardComplete == 0){}	
 }
 
 void right_pivot_turn(){
 	turn_flag = 1;
 	right_step_count = 0;//These values are guessed
 	left_step_count = 200;
-	while(right_step_count >=0 && left_step_count >=0){}
+	rightPTComplete = 0;
+	while(rightPTComplete == 0){}
 	turn_flag = 0;
 }
 
@@ -91,7 +100,8 @@ void left_pivot_turn(){
 	turn_flag = 1;
 	right_step_count = 200;//These values are guessed
 	left_step_count = 0;
-	while(right_step_count >=0 && left_step_count >=0){}
+	leftPTComplete = 0;
+	while(leftPTComplete == 0){}
 	turn_flag = 0;
 }
 
@@ -100,7 +110,8 @@ void right_stationary_turn(){
 	right_wheel_backwards = 1;
 	right_step_count = 200;//These values are guessed
 	left_step_count = 200;
-	while(right_step_count >=0 && left_step_count >=0){}
+	rightSTComplete = 0;
+	while(rightPTComplete == 0){}
 	turn_flag = 0;
 
 }
@@ -110,7 +121,8 @@ void left_stationary_turn(){
 	left_wheel_backwards = 1;
 	right_step_count = 200;//These values are guessed
 	left_step_count = 200;
-	while(right_step_count >=0 && left_step_count >=0){}
+	leftSTComplete = 0;
+	while(leftSTComplete == 0){}
 	turn_flag = 0;
 
 }
@@ -130,7 +142,8 @@ void right_rolling_turn(){
 	left_speed = MAX_SPEED;
 	right_step_count = 100;//These values are guessed
 	left_step_count = 200;
-	while(right_step_count >=0 && left_step_count >=0){}
+	rightRTComplete = 0;
+	while(rightRTComplete == 0){}
 	turn_flag = 0;	
 }
 
@@ -140,7 +153,8 @@ void left_rolling_turn(){
 	right_speed = MAX_SPEED;
 	left_step_count = 100;//These values are guessed
 	right_step_count = 200;
-	while(right_step_count >=0 && left_step_count >=0){}
+	leftRTComplete = 0;
+	while(leftRTComplete == 0){}
 	turn_flag = 0;	
 }
 
@@ -189,7 +203,7 @@ void main(void) {
 		forward();
 		u_turn();
 		
-    } /* loop forever */
+    }/* loop forever */
   /* please make sure that you never leave main */
 }
 
@@ -304,7 +318,18 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
 			//u_turn_count++;
 		}
 	}
-	
+	if(right_step_count < 0 && left_step_count < 0) {
+	        ideal_distance = 0;
+	        if(forwardComplete == 0) forwardComplete = 1;
+	        else if(rightRTComplete == 0) rightRTComplete = 1;
+	        else if(rightSTComplete == 0) rightSTComplete = 1;
+	        else if(rightPTComplete == 0) rightPTComplete = 1;
+	        else if(leftRTComplete == 0) leftRTComplete = 1;
+	        else if(leftSTComplete == 0) leftSTComplete = 1;
+	        else if(leftPTComplete == 0) leftPTComplete = 1;
+	}
+	        
+	        
 	
 	if(u_turn_count > 425){
 		//MAX_SPEED == 20 this = 425; 15, 410
