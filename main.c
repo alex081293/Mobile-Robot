@@ -10,6 +10,7 @@
 #include <hidef.h>			 /* common defines and macros */
 #include "derivative.h"		 /* derivative-specific definitions */
 #include <cstdio.h>
+#include <stdlib.h>
 #include "filter.h"
 #define MAX_SPEED 20
 #define MIN_SPEED 250
@@ -41,12 +42,13 @@ static int left_count=200; 	//count for left motor
 static int right_count=200;	//count for right motor
 
 static int ramp_count = 0;
+static int wait_count = 0;
 	
 static int left_speed_final = MAX_SPEED;
 static int right_speed_final = MAX_SPEED;
 	
-static int left_speed  = MIN_SPEED-1;
-static int right_speed = MIN_SPEED-1;
+static int left_speed  = MIN_SPEED-100;
+static int right_speed = MIN_SPEED-100;
 	
 static int leftPos = 0;
 static int rightPos = 0;
@@ -57,8 +59,8 @@ static int u_turn_count = 0;
 static int u_turn_flag = 0;
 static int turn_flag = 0;//Used to stop sensor reading and correction while turning
 
-static int right_wheel_backwards = 0;//Sets right wheel motion backwards
-static int left_wheel_backwards = 0;//Sets left wheel motion backwards
+static unsigned int right_wheel_backwards = 0;//Sets right wheel motion backwards
+static unsigned int left_wheel_backwards = 0;//Sets left wheel motion backwards
 
 int ideal_distance = 62; 
 int max_wall_distance = 45;
@@ -68,91 +70,131 @@ float d_value = .5;
 //static char right_chars[8] ={0x80, 0xC0, 0x40, 0x60, 0x20, 0x30, 0x10, 0x90};
 static char right_chars[8] ={0xC0, 0x40, 0x60, 0x60, 0x30, 0x10, 0x90, 0x80};
 static char left_chars[8] = {0x08, 0x09, 0x01, 0x03, 0x02, 0x06, 0x04, 0x0C};
+                    
+                    
+void wait(int time){
+	while((wait_count % time) != 0){}
+	wait_count = 0;
+}
 
+void resetValues() {
+	turn_flag = 0;
+	leftPos = rightPos = 4;
+	right_step_count = left_step_count = 10; 
+	right_wheel_backwards = left_wheel_backwards = 0;
+	right_speed = left_speed = 150;
+	right_speed_final = left_speed_final = MAX_SPEED;
+	
+	wait(20); 
+}
 
 void forward(){// forward one block
 	//PTH = 0x40;
-	right_step_count = 1000;//These values are guessed
-	left_step_count = 1000;
-	while(right_step_count >=0 && left_step_count >=0){}
 	
+	leftPos = 4; //Reset Wheel Position
+	rightPos = 4;
+	//right_speed_final = MAX_SPEED;
+	//left_speed_final = MAX_SPEED;
+	right_step_count = 1500;
+	left_step_count = 1500;
+	while(right_step_count >=0 && left_step_count >=0){}
+	right_speed_final = MIN_SPEED;
+	left_speed_final = MIN_SPEED;
+	right_step_count = 200;
+	left_step_count = 200;
+	while(right_step_count >=0 && left_step_count >=0){}
+	resetValues();
 
 }
 
 void right_pivot_turn(){
 	PTH = 0x24;
 	turn_flag = 1;
+	leftPos = rightPos = 4; //Reset Wheel Position
+	right_speed = right_speed_final = 9000;
+	left_speed = left_speed_final = MAX_SPEED;
 	right_step_count = 0;//These values are guessed
-	left_step_count = 212;
+	left_step_count = 3000;
 	while(right_step_count >=0 && left_step_count >=0){}
-	turn_flag = 0;
+	resetValues();
 }
 
 void left_pivot_turn(){
 	PTH = 0x02;
 	turn_flag = 1;
-	right_step_count = 212;//These values are guessed
+	leftPos = rightPos = 4; //Reset Wheel Position
+	right_speed = right_speed_final = MAX_SPEED;
+	left_speed = left_speed_final = 9000;
+	right_step_count = 3000;
 	left_step_count = 0;
 	while(right_step_count >=0 && left_step_count >=0){}
-	turn_flag = 0;
+	resetValues();
 }
 
 void right_stationary_turn(){
 	PTH = 0x79;
+	leftPos = rightPos = 4; //Reset Wheel Position
+	right_speed_final = MAX_SPEED;
+	left_speed_final = MAX_SPEED;
 	turn_flag = 1;
 	right_wheel_backwards = 1;
-	right_step_count = 106;//These values are guessed
-	left_step_count = 106;
+	right_step_count = 205;
+	left_step_count = 205;
 	while(right_step_count >=0 && left_step_count >=0){}
-	right_wheel_backwards = 0;
-	turn_flag = 0;
-
+    resetValues();
 }
 
 void left_stationary_turn(){
 	PTH = 0x12;
+	leftPos = rightPos = 4; //Reset Wheel Position
+	right_speed_final = MAX_SPEED;
+	left_speed_final = MAX_SPEED;
 	turn_flag = 1;
 	left_wheel_backwards = 1;
-	right_step_count = 106;//These values are guessed
-	left_step_count = 106;
+	right_step_count = 205;
+	left_step_count = 205;
 	while(right_step_count >=0 && left_step_count >=0){}
-	turn_flag = 0;
-	left_wheel_backwards = 0;
-
+	resetValues();
 }
 
 void u_turn(){
 	PTH = 0x19;
+	leftPos = rightPos = 4; //Reset Wheel Position
+	right_speed_final = MAX_SPEED;
+	left_speed_final = MAX_SPEED;
 	turn_flag = 1;
 	left_wheel_backwards = 1;
-	right_step_count = 53;
-	left_step_count = 53;
+	right_step_count = 410;
+	left_step_count = 410;
 	while(right_step_count >=0 && left_step_count >=0){}
-	turn_flag = 0;
-	left_wheel_backwards = 0;
+  resetValues();
 }
 
 void right_rolling_turn(){
 	PTH = 0x30;
+	leftPos = rightPos = 4; //Reset Wheel Position
+	right_speed_final = MAX_SPEED+100;
+	left_speed_final = MAX_SPEED;
 	turn_flag = 1;
-	right_speed = MAX_SPEED+100;
-	left_speed = MAX_SPEED;
-	right_step_count = 100;//These values are guessed
-	left_step_count = 200;
+	right_wheel_backwards = 1;
+	right_step_count = 105;
+	left_step_count = 210;
 	while(right_step_count >=0 && left_step_count >=0){}
-	turn_flag = 0;	
+    resetValues();	
 }
 
 void left_rolling_turn(){
 	PTH = 0x78;
+	leftPos = rightPos = 4; //Reset Wheel Position
+	right_speed_final = MAX_SPEED;
+	left_speed_final = MAX_SPEED+100;
 	turn_flag = 1;
-	left_speed = MAX_SPEED+100;
-	right_speed = MAX_SPEED;
-	left_step_count = 100;//These values are guessed
-	right_step_count = 200;
+	right_wheel_backwards = 1;
+	right_step_count = 210;
+	left_step_count = 105;
 	while(right_step_count >=0 && left_step_count >=0){}
-	turn_flag = 0;	
-}
+    resetValues();
+}	
 
 void main(void) {
 	SYNR = 2;
@@ -161,43 +203,54 @@ void main(void) {
 	while(!(CRGFLG&0x08)){}
 	CLKSEL |= 0x80;
 	
-	MCCTL = 0xCF;//Interrupt Enabled, Force Load, Enabled, P=16
+	MCCTL |= 0x04;
 	MCCNT = 150;
-  
+ 	MCCTL = 0xC7;//Interrupt Enabled, Force Load, Enabled, P=16
+
 	DDRK=0xFF;
 	DDRB=0xFF;
 	DDRH=0xFF;
 	
-	ATD0CTL2 = 0x80; //Turns on ATD converter
+	/*ATD0CTL2 = 0x80; //Turns on ATD converter
 	ATD0CTL3 = 0x18; //Length=3 FIFO=0
 	ATD0CTL4 = 0x80; //8-bit resolution
-	ATD0CTL5 = 0x33; //Left Justified, Unsigned, SCAN=1, MULTI=1, START=3
+	ATD0CTL5 = 0x33; //Left Justified, Unsigned, SCAN=1, MULTI=1, START=3*/
 
 	EnableInterrupts;
 
 	//forward(); 
     for(;;) {
-		//Below is what our finished code will do
-		//I cannot make anything happen in any kind of control statement in the main.
-		//Even outside this for loop.
-		//I can call funtions outside the loop, but if the funtion has a control statement
-		//it gets stuck there
-		
+		wait(500);		
 		forward();
-		/*right_stationary_turn();
-		forward();
-		right_pivot_turn();
-		forward();
+		//wait(500);
+		//right_stationary_turn();
+		//wait(500);
+		//forward();
+		//wait(500);
+		//right_pivot_turn();
+		//wait(500);
+		//forward();
+		wait(500);
 		right_rolling_turn();
+		wait(500);
 		forward();
+		//wait(500);
 		u_turn();
+		wait(500);
 		forward();
-		left_stationary_turn();
+		wait(500);
+		//left_stationary_turn();
+		//wait(500);
+		//forward();
+		//wait(500);
+		//left_pivot_turn();
+		//wait(500);
+		//forward();
+		//wait(500);
+		left_rolling_turn();		
+		wait(500);
 		forward();
-		left_pivot_turn();
-		forward();
-		left_rolling_turn();
-		forward();*/
+		wait(500);
 		u_turn();
 	
 		 
@@ -214,7 +267,8 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
 	left_count++;
 	right_count++;
 	ramp_count++; 
-	read_count++;
+	//read_count++;
+	wait_count++;
 
 	
 	//The Wall follow is commented out for debugging reasons
@@ -273,28 +327,29 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
 	if (ramp_count == rampCoef){//Ramping
 	     
 	    if(right_speed < right_speed_final){
-	        right_speed +=10;    //slow it down
+	        right_speed +=1;    //slow it down
 	    }else if(right_speed>right_speed_final){
-	        right_speed -=5;    //speed it up
+	        right_speed -=1;    //speed it up
 	    }  
 	    if(left_speed < left_speed_final){
-	        left_speed +=10;    //slow it down
+	        left_speed +=1;    //slow it down
 	    }else if(left_speed>left_speed_final){
-	        left_speed -=5;    //speed it up
+	        left_speed -=1;    //speed it up
 	    }	    
 	    ramp_count = 0;
 	}
 	
-	
-	
+	if(left_wheel_backwards != 0 && left_wheel_backwards != 1){ left_wheel_backwards = 0; left_speed = 150;}
+	if(right_wheel_backwards != 0 && right_wheel_backwards != 1){ right_wheel_backwards = 0; right_speed =150;}
+
 	//Increment Left Wheel
 	if(left_count>=left_speed){
-		if(left_wheel_backwards == 0){//Forwards
+		if(left_wheel_backwards <= 0){//Forwards
 			leftPos++;
 			if(leftPos==8)leftPos = 0;
 			left_count=0;
 			left_step_count--;
-		}else{//Backwards
+		}else if(left_wheel_backwards >= 1){//Backwards
 			leftPos--;
 			if(leftPos<=0)leftPos = 8;
 			left_count=0;
@@ -305,12 +360,12 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
 	 
 	//Increment Right Wheel
 	if(right_count>=right_speed){
-		if(right_wheel_backwards == 0){//Forwards 
+		if(right_wheel_backwards <= 0){//Forwards 
 			rightPos++;
 			if(rightPos==8)rightPos = 0;
 			right_count=0;
 			right_step_count--;
-		}else{//Backwards
+		}else if(right_wheel_backwards >= 1){//Backwards
 			rightPos--;
 			if(rightPos<=0)rightPos = 8;
 			right_count=0;
@@ -318,18 +373,11 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
 			//u_turn_count++;
 		}
 	}
-	
-	/*if(u_turn_count > 425){//MAX_SPEED == 20 this = 425; 15, 410
-	u_turn_count = 0;
-	u_turn_flag = 0;
-	//right_speed_final = MIN_SPEED;
-	//left_speed_final  = MIN_SPEED;
-	}*/
 	 
-	PORTB = left_chars[leftPos] + right_chars[rightPos];
+  if(left_speed == 9000) PORTB = right_chars[rightPos];
+  else if(right_speed == 9000) PORTB = left_chars[leftPos];
+  else PORTB = left_chars[leftPos] + right_chars[rightPos];
 }
-
-
 
 
 
