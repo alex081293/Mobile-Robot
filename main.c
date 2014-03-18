@@ -1,12 +1,3 @@
-/*    Project6  - Part A and B - IIR Filter in Fixed Point
-*    University of South Florida
-*
-*    Sean Fleming
-*    Timothy Lizardi
-*    
-*
-*/
-
 #include <hidef.h>             /* common defines and macros */
 #include "derivative.h"         /* derivative-specific definitions */
 #include <cstdio.h>
@@ -100,6 +91,7 @@ void resetValues() {
     wait(20); 
 }
 
+<<<<<<< HEAD
 void forward(int distance){
     
     PTH = 0x40;    
@@ -116,6 +108,35 @@ void forward(int distance){
     }
     resetValues();
     wait(wait_time);
+=======
+void forward(){// forward one block
+	
+    PTH = 0x40;    
+    leftPos = 4; //Reset Wheel Position
+    rightPos = 4;
+    //right_speed_final = MAX_SPEED;
+    //left_speed_final = MAX_SPEED;
+   // right_step_count = left_step_count = 280;
+    right_step_count = left_step_count = 275;	
+
+    while(right_step_count >=0 || left_step_count >=0){}
+    resetValues();
+    wait(wait_time);
+
+}
+void forward2(){// forward one block
+    PTH = 0x40;    
+    leftPos = 4; //Reset Wheel Position
+    rightPos = 4;
+    //right_speed_final = MAX_SPEED;
+    //left_speed_final = MAX_SPEED;
+    right_step_count = left_step_count = 130;	
+ 
+    while(right_step_count >=0 || left_step_count >=0){}
+    resetValues();
+    wait(wait_time);
+	
+>>>>>>> 1017d607b4dd62b390f4c354c911b9317aa89d57
 }
 
 void right_pivot_turn(){
@@ -166,18 +187,29 @@ void left_pivot_turn(){
 }
 
 void right_stationary_turn(){
+<<<<<<< HEAD
     turn_flag = 1;
     right_speed_final = left_speed_final = MAX_SPEED; // To Minimize slippage MESS WITH THIS NUMBER
     forward(275);
     PTH = 0x79;
     
     turn_flag = 1;
+=======
+	turn_flag = 1;
+	right_speed_final = left_speed_final = MAX_SPEED;
+	forward();
+        PTH = 0x79;
+	
+	turn_flag = 1;
+    // Slows down
+>>>>>>> 1017d607b4dd62b390f4c354c911b9317aa89d57
     right_speed_final = left_speed_final = 200;
     while(right_speed < 150 || left_speed < 150){};
     leftPos = rightPos = 4; //Reset Wheel Position
     right_speed_final = MAX_SPEED;
     left_speed_final = MAX_SPEED;
 
+<<<<<<< HEAD
     right_wheel_backwards = 1;
     right_step_count = left_step_count = 180;    
     while(right_step_count >=0 || left_step_count >=0){}    
@@ -196,10 +228,33 @@ void left_stationary_turn(){
         right_speed_final = left_speed_final = 200;
         while(right_speed < 150 || left_speed < 150){};
    
+=======
+    // Turns
+    right_wheel_backwards = 1;
+    right_step_count = left_step_count = 165;    
+    while(right_step_count >=0 || left_step_count >=0){}	
+	resetValues(); 
+    wait(wait_time);	
+	forward();
+}
+
+void left_stationary_turn(){
+	turn_flag = 1;
+	right_speed_final = left_speed_final = MAX_SPEED; 
+	forward();
+    PTH = 0x12;
+	turn_flag = 1;
+
+    // slows down
+    right_speed_final = left_speed_final = 200;
+    while(right_speed < 150 || left_speed < 150){};
+
+>>>>>>> 1017d607b4dd62b390f4c354c911b9317aa89d57
     leftPos = rightPos = 4; //Reset Wheel Position
     right_speed_final = MAX_SPEED;
     left_speed_final = MAX_SPEED;
     
+    //  Turns
     left_wheel_backwards = 1;
     right_step_count = left_step_count = 165;    
     while(right_step_count >=0 || left_step_count >=0){}    
@@ -228,7 +283,7 @@ void u_turn(){
     turn = STATIONARY;
 }
 
-void right_rolling_turn(){//Doesn't Work for some reason
+void right_rolling_turn(){
     wait(wait_time*500);
     turn_flag = 1;    
     PTH = 0x30;
@@ -300,8 +355,14 @@ void main(void) {
         left_pivot_turn();        
         forward(730);
         left_rolling_turn();        
+<<<<<<< HEAD
         forward(250);
         u_turn();    
+=======
+        forward();
+		forward();
+        u_turn();     
+>>>>>>> 1017d607b4dd62b390f4c354c911b9317aa89d57
     } /* loop forever */
   /* please make sure that you never leave main */
 }
