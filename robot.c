@@ -1,10 +1,9 @@
-/*    Project6  - Part A and B - IIR Filter in Fixed Point
-*    University of South Florida
-*
-*    Sean Fleming
-*    Timothy Lizardi
+/*
 *    
-*
+*    Project 6
+*    Alex Moran
+*    Akash Patel
+*    
 */
 
 #include <hidef.h>             /* common defines and macros */
@@ -12,6 +11,8 @@
 #include <cstdio.h>
 #include <stdlib.h>
 //#include "filter.h"
+
+// Emums for ease of read
 #define MAX_SPEED 20
 #define MIN_SPEED 250
 #define FRONT 0
@@ -83,12 +84,13 @@ float d_value = .6;
 static char right_chars[8] ={0xC0, 0x40, 0x60, 0x60, 0x30, 0x10, 0x90, 0x80};
 static char left_chars[8] = {0x08, 0x09, 0x01, 0x03, 0x02, 0x06, 0x04, 0x0C};
                     
-                    
+// Software wait                    
 void wait(int time){
     while((wait_count % time) != 0){}
     wait_count = 0;
 }
 
+// Resets the values of everything after turns
 void resetValues() {
     turn_flag = 0;
     leftPos = rightPos = 4;
@@ -100,6 +102,7 @@ void resetValues() {
     wait(20); 
 }
 
+// Moves forward for a given distance, if the front prox reaches a certain distance, it jumps out
 void forward(int distance){
     
     PTH = 0x40;    
@@ -118,19 +121,20 @@ void forward(int distance){
     wait(wait_time);
 }
 
+// Right Pivot Turn
 void right_pivot_turn(){
-    leftPos = 4; //Reset Wheel Position
+    //Reset Wheel Position
+    leftPos = 4; 
     rightPos = 4;
-    
+    // Moves forward a little
     right_step_count = left_step_count = 200;
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues();
     wait(wait_time);
-    
-    
     PTH = 0x24;
     turn_flag = 1;
-    leftPos = rightPos = 4; //Reset Wheel Position
+    leftPos = rightPos = 4;
+    // Sets the speeds of the wheels to do the turn
     right_speed = right_speed_final = MIN_SPEED+60;
     left_speed = left_speed_final = MAX_SPEED;
     right_step_count = 0;
@@ -138,20 +142,17 @@ void right_pivot_turn(){
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues();
     wait(wait_time);
+    // Next turn is now rolling
     turn = ROLLING;
-
 }
 
 void left_pivot_turn(){
     leftPos = 4; //Reset Wheel Position
     rightPos = 4;
-    
     right_step_count = left_step_count = 200;
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues();
-    wait(wait_time);
-    
-    
+    wait(wait_time);   
     PTH = 0x02;
     turn_flag = 1;
     leftPos = rightPos = 4; //Reset Wheel Position
@@ -167,17 +168,15 @@ void left_pivot_turn(){
 
 void right_stationary_turn(){
     turn_flag = 1;
-    right_speed_final = left_speed_final = MAX_SPEED; // To Minimize slippage MESS WITH THIS NUMBER
+    right_speed_final = left_speed_final = MAX_SPEED; 
     forward(275);
     PTH = 0x79;
-    
     turn_flag = 1;
     right_speed_final = left_speed_final = 200;
     while(right_speed < 150 || left_speed < 150){};
     leftPos = rightPos = 4; //Reset Wheel Position
     right_speed_final = MAX_SPEED;
     left_speed_final = MAX_SPEED;
-
     right_wheel_backwards = 1;
     right_step_count = left_step_count = 180;    
     while(right_step_count >=0 || left_step_count >=0){}    
@@ -193,13 +192,11 @@ void left_stationary_turn(){
     forward(275);
     PTH = 0x12;
     turn_flag = 1;
-        right_speed_final = left_speed_final = 200;
-        while(right_speed < 150 || left_speed < 150){};
-   
+    right_speed_final = left_speed_final = 200;
+    while(right_speed < 150 || left_speed < 150){};
     leftPos = rightPos = 4; //Reset Wheel Position
     right_speed_final = MAX_SPEED;
-    left_speed_final = MAX_SPEED;
-    
+    left_speed_final = MAX_SPEED; 
     left_wheel_backwards = 1;
     right_step_count = left_step_count = 165;    
     while(right_step_count >=0 || left_step_count >=0){}    
@@ -244,15 +241,13 @@ void right_rolling_turn(){//Doesn't Work for some reason
     turn = UTURN;
 }
 
-void left_rolling_turn(){
-    
+void left_rolling_turn(){ 
     wait(wait_time*500);
     PTH = 0x78;
     turn_flag = 1;     
     leftPos = rightPos = 4; //Reset Wheel Position
     right_speed = right_speed_final = MAX_SPEED;
-    left_speed = left_speed_final = MAX_SPEED*2.5;
-    
+    left_speed = left_speed_final = MAX_SPEED*2.5; 
     left_step_count = 235;
     right_step_count = left_step_count*2.5;    
     while(right_step_count >=0 || left_step_count >=0){}
@@ -285,6 +280,7 @@ void main(void) {
 
     EnableInterrupts;
     forward(290);
+    // Loops forever making the correct turns
     for(;;) {       
         forward(500);       
         right_stationary_turn();        
@@ -340,20 +336,15 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
         if (left_prox >= max_wall_distance && right_prox >= max_wall_distance){
             ideal_distance = (left_prox + right_prox)/2;    
         }
-    
 
-    
-    
         if (left_prox > max_wall_distance  && turn_flag!=1){    
             //Left Sensor Control
             if (left_prox < (ideal_distance)){//If too far from left wall correct        
                right_speed_final  = MAX_SPEED;
                left_speed_final  = MAX_SPEED +(p_value * (ideal_distance - left_prox)) + (d_value * old_left_prox_derivative); 
-               //old_left_prox_derivative = (  ideal_distance - left_prox);
                }else{     //If too close to left wall correct   
                    left_speed_final  = MAX_SPEED;
                    right_speed_final  = MAX_SPEED +(-p_value * ( ideal_distance - left_prox)) + (-d_value * old_left_prox_derivative); 
-                   //old_left_prox_derivative = ( ideal_distance - left_prox);
             }
         }
         
@@ -362,11 +353,9 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
             if (right_prox < (ideal_distance)){//If too far from right wall correct        
                left_speed_final  = MAX_SPEED;
                right_speed_final  = MAX_SPEED +(p_value * (ideal_distance - right_prox)) + (d_value * old_right_prox_derivative); 
-               //old_right_prox_derivative = (ideal_distance - right_prox);
                }else{     //If too close to right wall correct   
                    right_speed_final  = MAX_SPEED;
                    left_speed_final  = MAX_SPEED +(-p_value * (ideal_distance - right_prox)) + (-d_value * old_right_prox_derivative); 
-                   //old_right_prox_derivative = (ideal_distance - right_prox);
             }
         }
 
@@ -378,8 +367,9 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
     
     //Front Sensor Control
     }
-       
-    if (ramp_count == rampCoef){//Ramping
+    
+    // Ramping   
+    if (ramp_count == rampCoef){
          
         if(right_speed < right_speed_final){
             right_speed +=1;    //slow it down
