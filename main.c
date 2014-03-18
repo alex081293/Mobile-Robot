@@ -18,6 +18,11 @@
 #define LEFT 1
 #define RIGHT 2
 
+#define UTURN 100
+#define PIVOT 101
+#define STATIONARY 102
+#define ROLLING 103
+
 #define LCD_DATA PORTK 
 #define LCD_CTRL PORTK 
 #define RS 0x01 
@@ -25,11 +30,14 @@
 
 int a1[3] = {0x4000, 0x63E7, 0x290B};
 int b1[3] = {0x0524, 0x0A48, 0x0524}; 
+int front_filter[8];
 int front_prox = 0;
 int left_prox = 0;
 int right_prox = 0;
 int old_left_prox_derivative = 0;
 int old_right_prox_derivative = 0;
+int ave = 0;
+int i = 0;
 static int read_count=0;
 static int front_temp = 0;
 static int left_temp =  0;
@@ -64,6 +72,8 @@ static unsigned int left_wheel_backwards = 0;//Sets left wheel motion backwards
 
 static int wait_time = 100;
 
+static int turn;
+
 int ideal_distance = 62; 
 int max_wall_distance = 45;
 float p_value = .25;
@@ -90,104 +100,58 @@ void resetValues() {
     wait(20); 
 }
 
-void forward(){// forward one block
-	//DON'T FUCK WITH THIS FUNCTION
-	//DON'T FUCK WITH THIS FUNCTION
-	//DON'T FUCK WITH THIS FUNCTION
-	//DON'T FUCK WITH THIS FUNCTION
-	//DON'T FUCK WITH THIS FUNCTION
-	//DON'T FUCK WITH THIS FUNCTION
-	
+void forward(int distance){
+    
     PTH = 0x40;    
     leftPos = 4; //Reset Wheel Position
     rightPos = 4;
-    //right_speed_final = MAX_SPEED;
-    //left_speed_final = MAX_SPEED;
-   // right_step_count = left_step_count = 280;//DON'T FUCK WITH THIS FUNCTION
-    right_step_count = left_step_count = 275;	
-	// *********************************************************
-	// I SWEAR TO FUCKING ALLAH, IF YOU CHANGED ANYHTING...
-	// *********************************************************
- 
-    while(right_step_count >=0 || left_step_count >=0){}
+
+    right_step_count = left_step_count = distance;   
+
+    while(right_step_count >=0 || left_step_count >=0){
+        if((turn == UTURN) && (front_prox >= 80)) right_step_count = left_step_count = 0;
+        if((turn == STATIONARY) && (front_prox >= 80)) right_step_count = left_step_count = 0;
+        if((turn == PIVOT) && (front_prox >= 31)) right_step_count = left_step_count = 0;
+      //  if((turn == ROLLING) && (front_prox >= 50)) right_step_count = left_step_count = 0;
+    }
     resetValues();
     wait(wait_time);
-	// ************************************************************
-	// I'll CUT YOUR FACE OFF, AND WHERE IT WHEN I FUCK YOUR MOTHER
-	// ************************************************************
-	
-
-}
-void forward2(){// forward one block
-	//DON'T FUCK WITH THIS FUNCTION
-	//DON'T FUCK WITH THIS FUNCTION
-	//DON'T FUCK WITH THIS FUNCTION
-	//DON'T FUCK WITH THIS FUNCTION
-	//DON'T FUCK WITH THIS FUNCTION
-	//DON'T FUCK WITH THIS FUNCTION
-	
-    PTH = 0x40;    
-    leftPos = 4; //Reset Wheel Position
-    rightPos = 4;
-    //right_speed_final = MAX_SPEED;
-    //left_speed_final = MAX_SPEED;
-   // right_step_count = left_step_count = 280;//DON'T FUCK WITH THIS FUNCTION
-    right_step_count = left_step_count = 130;	
-	// *********************************************************
-	// I SWEAR TO FUCKING ALLAH, IF YOU CHANGED ANYHTING...
-	// *********************************************************
- 
-    while(right_step_count >=0 || left_step_count >=0){}
-    resetValues();
-    wait(wait_time);
-	// ************************************************************
-	// I'll CUT YOUR FACE OFF, AND WHERE IT WHEN I FUCK YOUR MOTHER
-	// ************************************************************
-	
-
 }
 
 void right_pivot_turn(){
-	leftPos = 4; //Reset Wheel Position
+    leftPos = 4; //Reset Wheel Position
     rightPos = 4;
     
     right_step_count = left_step_count = 200;
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues();
     wait(wait_time);
-	
-	
+    
+    
     PTH = 0x24;
     turn_flag = 1;
     leftPos = rightPos = 4; //Reset Wheel Position
     right_speed = right_speed_final = MIN_SPEED+60;
     left_speed = left_speed_final = MAX_SPEED;
     right_step_count = 0;
-    left_step_count = 170;
+    left_step_count = 147;
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues();
     wait(wait_time);
-    forward();
-	// leftPos = 4; //Reset Wheel Position
-    // rightPos = 4;
-    
-    // right_step_count = left_step_count = 142;
-    // while(right_step_count >=0 || left_step_count >=0){}
-    // resetValues();
-    // wait(wait_time);
+    turn = ROLLING;
 
 }
 
 void left_pivot_turn(){
-	leftPos = 4; //Reset Wheel Position
+    leftPos = 4; //Reset Wheel Position
     rightPos = 4;
     
     right_step_count = left_step_count = 200;
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues();
     wait(wait_time);
-	
-	
+    
+    
     PTH = 0x02;
     turn_flag = 1;
     leftPos = rightPos = 4; //Reset Wheel Position
@@ -198,38 +162,37 @@ void left_pivot_turn(){
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues();
     wait(wait_time);
-    forward();
-	
-
+    turn = ROLLING;  
 }
 
-void right_stationary_turn(){//The only thing that doesn't work. ALOT of slippage
-	turn_flag = 1;
-	right_speed_final = left_speed_final = MAX_SPEED; // To Minimize slippage MESS WITH THIS NUMBER
-	forward();
-        PTH = 0x79;
-	
-	turn_flag = 1;
-        right_speed_final = left_speed_final = 200;
-        while(right_speed < 150 || left_speed < 150){};
-        leftPos = rightPos = 4; //Reset Wheel Position
-        right_speed_final = MAX_SPEED;
-        left_speed_final = MAX_SPEED;
+void right_stationary_turn(){
+    turn_flag = 1;
+    right_speed_final = left_speed_final = MAX_SPEED; // To Minimize slippage MESS WITH THIS NUMBER
+    forward(275);
+    PTH = 0x79;
     
-        right_wheel_backwards = 1;
-        right_step_count = left_step_count = 165;    
-        while(right_step_count >=0 || left_step_count >=0){}	
-	resetValues(); 
-    wait(wait_time);	
-	forward();
+    turn_flag = 1;
+    right_speed_final = left_speed_final = 200;
+    while(right_speed < 150 || left_speed < 150){};
+    leftPos = rightPos = 4; //Reset Wheel Position
+    right_speed_final = MAX_SPEED;
+    left_speed_final = MAX_SPEED;
+
+    right_wheel_backwards = 1;
+    right_step_count = left_step_count = 180;    
+    while(right_step_count >=0 || left_step_count >=0){}    
+    resetValues(); 
+    wait(wait_time);    
+    forward(275);
+    turn = PIVOT;
 }
 
 void left_stationary_turn(){
-	turn_flag = 1;
-	right_speed_final = left_speed_final = MAX_SPEED; // To Minimize slippage
-	forward();
+    turn_flag = 1;
+    right_speed_final = left_speed_final = MAX_SPEED; // To Minimize slippage
+    forward(275);
     PTH = 0x12;
-	turn_flag = 1;
+    turn_flag = 1;
         right_speed_final = left_speed_final = 200;
         while(right_speed < 150 || left_speed < 150){};
    
@@ -239,18 +202,19 @@ void left_stationary_turn(){
     
     left_wheel_backwards = 1;
     right_step_count = left_step_count = 165;    
-    while(right_step_count >=0 || left_step_count >=0){}	
-	resetValues(); 
-    wait(wait_time);	
-	forward();
+    while(right_step_count >=0 || left_step_count >=0){}    
+    resetValues(); 
+    wait(wait_time);    
+    forward(275);
+    turn = PIVOT;
 }
 
 void u_turn(){
-	turn_flag = 1;
-	right_speed_final = left_speed_final = 30;// To Minimize spillage
-	forward();
+    turn_flag = 1;
+    right_speed_final = left_speed_final = 30;// To Minimize spillage
+    forward(275);
     PTH = 0x19;
-	turn_flag = 1;
+    turn_flag = 1;
     leftPos = rightPos = 4; //Reset Wheel Position
     right_speed_final = MAX_SPEED+20;
     left_speed_final = MAX_SPEED+20;    
@@ -259,8 +223,9 @@ void u_turn(){
     left_step_count = 410;
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues(); 
-    wait(wait_time);	
-	forward();
+    wait(wait_time);    
+    forward(275);
+    turn = STATIONARY;
 }
 
 void right_rolling_turn(){//Doesn't Work for some reason
@@ -268,31 +233,33 @@ void right_rolling_turn(){//Doesn't Work for some reason
     turn_flag = 1;    
     PTH = 0x30;
     leftPos = rightPos = 4; //Reset Wheel Position
-    right_speed = right_speed_final = MAX_SPEED*2.4;
+    right_speed = right_speed_final = MAX_SPEED*2.5;
     left_speed = left_speed_final = MAX_SPEED;    
     right_step_count = 235;
     left_step_count = right_step_count*2.5;
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues();    
     wait(wait_time);
-    forward();
+    forward(275);
+    turn = UTURN;
 }
 
 void left_rolling_turn(){
     
     wait(wait_time*500);
     PTH = 0x78;
-	turn_flag = 1;     
+    turn_flag = 1;     
     leftPos = rightPos = 4; //Reset Wheel Position
     right_speed = right_speed_final = MAX_SPEED;
     left_speed = left_speed_final = MAX_SPEED*2.5;
     
-	left_step_count = 235;
+    left_step_count = 235;
     right_step_count = left_step_count*2.5;    
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues();
     wait(wait_time);
-    forward();
+    forward(275);
+    turn = UTURN;
 }    
 
 void main(void) {
@@ -313,42 +280,28 @@ void main(void) {
     ATD0CTL2 = 0x80; //Turns on ATD converter
     ATD0CTL3 = 0x18; //Length=3 FIFO=0
     ATD0CTL4 = 0x80; //8-bit resolution
-    ATD0CTL5 = 0x33; //Left Justified, Unsigned, SCAN=1, MULTI=1, START=3
+    ATD0CTL5 = 0x32;
+    //ATD0CTL5 = 0x33; //Left Justified, Unsigned, SCAN=1, MULTI=1, START=3
 
     EnableInterrupts;
-
-    forward(); 
-    for(;;) {
-        
-        forward();
-        forward();        
+    forward(290);
+    for(;;) {       
+        forward(500);       
         right_stationary_turn();        
-        forward();
-		forward();        
-        right_pivot_turn();        
-        forward(); 
-        forward();
-        forward2();    
+        forward(700);        
+        right_pivot_turn();         
+        forward(725);     
         right_rolling_turn();        
-        forward();
-		forward();
+        forward(250);
         u_turn();        
-        forward();
-		forward();
+        forward(500);
         left_stationary_turn();        
-        forward();
-		forward();
+        forward(920);
         left_pivot_turn();        
-        forward();
-        forward();
-        forward2();
+        forward(730);
         left_rolling_turn();        
-        forward();
-		forward();
-        u_turn();
-          
-           
-        
+        forward(250);
+        u_turn();    
     } /* loop forever */
   /* please make sure that you never leave main */
 }
@@ -373,9 +326,15 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
         // left_prox = left_butterworth(ATD0DR1H, a1, b1);
         // right_prox = right_butterworth(ATD0DR0H, a1, b1);
         
-        front_prox = ATD0DR2H;
+        front_prox = ATD0DR0H;
+        front_filter[i] = front_prox;
+        i++;
+        front_prox = (front_filter[0] + front_filter[1] + front_filter[2] + front_filter[3] + front_filter[4] + front_filter[5] + front_filter[6] + front_filter[7])/8;
+        if (i >= 8) i = 0;
+
+
         left_prox = ATD0DR1H;
-        right_prox = ATD0DR0H;
+        right_prox = ATD0DR2H;
         
         read_count = 0;
         if (left_prox >= max_wall_distance && right_prox >= max_wall_distance){
