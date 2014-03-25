@@ -1,8 +1,8 @@
 /*
 *    
-*    Project 6
+*    Final Project
 *    Alex Moran
-*    Akash Patel
+*    Sean Fleming
 *    
 */
 
@@ -10,7 +10,6 @@
 #include "derivative.h"         /* derivative-specific definitions */
 #include <cstdio.h>
 #include <stdlib.h>
-//#include "filter.h"
 
 // Emums for ease of read
 #define MAX_SPEED 20
@@ -18,6 +17,12 @@
 #define FRONT 0
 #define LEFT 1
 #define RIGHT 2
+#define NORTH 0
+#define EAST 1
+#define SOUTH 2
+#define WEST 3
+
+#define STATIONARYDISTANCE 517
 
 #define UTURN 100
 #define PIVOT 101
@@ -32,6 +37,8 @@
 int a1[3] = {0x4000, 0x63E7, 0x290B};
 int b1[3] = {0x0524, 0x0A48, 0x0524}; 
 int front_filter[8];
+int right_filter[8];
+int left_filter[8];
 int front_prox = 0;
 int left_prox = 0;
 int right_prox = 0;
@@ -75,12 +82,18 @@ static int wait_time = 100;
 
 static int turn;
 
+static int maze[7][7];
+static int x, y;
+static int distance = 0;
+static int direction = NORTH;
+
+
 int ideal_distance = 62; 
 int max_wall_distance = 45;
-float p_value = .25;
-float d_value = .6;
+// .22 || .55
+float p_value = .22;
+float d_value = .55;
 
-//static char right_chars[8] ={0x80, 0xC0, 0x40, 0x60, 0x20, 0x30, 0x10, 0x90};
 static char right_chars[8] ={0xC0, 0x40, 0x60, 0x60, 0x30, 0x10, 0x90, 0x80};
 static char left_chars[8] = {0x08, 0x09, 0x01, 0x03, 0x02, 0x06, 0x04, 0x0C};
                     
@@ -104,19 +117,21 @@ void resetValues() {
 
 // Moves forward for a given distance, if the front prox reaches a certain distance, it jumps out
 void forward(int distance){
-    
-    PTH = 0x40;    
+      
     leftPos = 4; //Reset Wheel Position
     rightPos = 4;
 
     right_step_count = left_step_count = distance;   
-
+   
     while(right_step_count >=0 || left_step_count >=0){
-        if((turn == UTURN) && (front_prox >= 80)) right_step_count = left_step_count = 0;
-        if((turn == STATIONARY) && (front_prox >= 80)) right_step_count = left_step_count = 0;
-        if((turn == PIVOT) && (front_prox >= 31)) right_step_count = left_step_count = 0;
+    /*
+        if((turn == UTURN) && (front_prox >= 77) && (ATD0DR0H >= 77)) right_step_count = left_step_count = 0;
+        if((turn == STATIONARY) && (front_prox >= 80) && (ATD0DR0H >= 80)) right_step_count = left_step_count = 0;
+        if((turn == PIVOT) && (front_prox >= 45) && (ATD0DR0H >= 45)) right_step_count = left_step_count = 0;
       //  if((turn == ROLLING) && (front_prox >= 50)) right_step_count = left_step_count = 0;
+    */
     }
+    
     resetValues();
     wait(wait_time);
 }
@@ -127,8 +142,6 @@ void right_pivot_turn(){
     leftPos = 4; 
     rightPos = 4;
     // Moves forward a little
-    right_step_count = left_step_count = 200;
-    while(right_step_count >=0 || left_step_count >=0){}
     resetValues();
     wait(wait_time);
     PTH = 0x24;
@@ -149,16 +162,14 @@ void right_pivot_turn(){
 void left_pivot_turn(){
     leftPos = 4; //Reset Wheel Position
     rightPos = 4;
-    right_step_count = left_step_count = 200;
-    while(right_step_count >=0 || left_step_count >=0){}
     resetValues();
     wait(wait_time);   
     PTH = 0x02;
     turn_flag = 1;
     leftPos = rightPos = 4; //Reset Wheel Position
     right_speed = right_speed_final = MAX_SPEED;
-    left_speed = left_speed_final = MIN_SPEED;
-    right_step_count = 205;
+    left_speed = left_speed_final = MIN_SPEED+60;
+    right_step_count = 147;
     left_step_count = 0;
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues();
@@ -169,7 +180,6 @@ void left_pivot_turn(){
 void right_stationary_turn(){
     turn_flag = 1;
     right_speed_final = left_speed_final = MAX_SPEED; 
-    forward(275);
     PTH = 0x79;
     turn_flag = 1;
     right_speed_final = left_speed_final = 200;
@@ -182,14 +192,12 @@ void right_stationary_turn(){
     while(right_step_count >=0 || left_step_count >=0){}    
     resetValues(); 
     wait(wait_time);    
-    forward(275);
     turn = PIVOT;
 }
 
 void left_stationary_turn(){
     turn_flag = 1;
     right_speed_final = left_speed_final = MAX_SPEED; // To Minimize slippage
-    forward(275);
     PTH = 0x12;
     turn_flag = 1;
     right_speed_final = left_speed_final = 200;
@@ -202,14 +210,12 @@ void left_stationary_turn(){
     while(right_step_count >=0 || left_step_count >=0){}    
     resetValues(); 
     wait(wait_time);    
-    forward(275);
     turn = PIVOT;
 }
 
 void u_turn(){
     turn_flag = 1;
-    right_speed_final = left_speed_final = 30;// To Minimize spillage
-    forward(275);
+    right_speed_final = left_speed_final = 32;// To Minimize spillage
     PTH = 0x19;
     turn_flag = 1;
     leftPos = rightPos = 4; //Reset Wheel Position
@@ -221,7 +227,6 @@ void u_turn(){
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues(); 
     wait(wait_time);    
-    forward(275);
     turn = STATIONARY;
 }
 
@@ -237,7 +242,6 @@ void right_rolling_turn(){//Doesn't Work for some reason
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues();    
     wait(wait_time);
-    forward(275);
     turn = UTURN;
 }
 
@@ -253,13 +257,59 @@ void left_rolling_turn(){
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues();
     wait(wait_time);
-    forward(275);
     turn = UTURN;
 }    
 
+void explore(){
+    if(maze[x][y]==-1) distance++;
+    else distance--;
+    if(front_prox < 40) {
+        forward(STATIONARYDISTANCE);
+        if (direction == NORTH && (maze[x][y+1] == -1)) y++;
+        if (direction == EAST && (maze[x+1][y] == -1)) x++;
+        if (direction == SOUTH && (maze[x][y-1] == -1)) y--;
+        if (direction == WEST && (maze[x-1][y] == -1)) x--;
+        if(maze[x][y] == -1) maze[x][y] = distance;            
+        explore();
+    }
+    if(right_prox < 40){
+        right_stationary_turn();            
+        if (direction == NORTH) direction = EAST;
+        if (direction == EAST) direction = SOUTH;
+        if (direction == SOUTH) direction = WEST;
+        if (direction == WEST) direction = NORTH;    
+        explore();
+    }
+    if(left_prox < 40){
+        left_stationary_turn();
+        if (direction == NORTH) direction = WEST;
+        if (direction == EAST) direction = NORTH;
+        if (direction == SOUTH) direction = EAST;
+        if (direction == WEST) direction = SOUTH;
+        explore();
+    }
+    if(front_prox < 40) {
+        forward(517);
+        if (direction == NORTH) y++;
+        if (direction == EAST) x++;
+        if (direction == SOUTH) y--;
+        if (direction == WEST) x--;           
+        explore();
+    }
+    u_turn();
+    if (direction == NORTH) direction = SOUTH;
+    if (direction == EAST) direction = WEST;
+    if (direction == SOUTH) direction = NORTH;
+    if (direction == WEST) direction = EAST;
+    explore();
+}
+
 void main(void) {
+    int j=0;
+    x = y =0;
     SYNR = 2;
     REFDV = 0;
+
 
     while(!(CRGFLG&0x08)){}
     CLKSEL |= 0x80;
@@ -275,32 +325,47 @@ void main(void) {
     ATD0CTL2 = 0x80; //Turns on ATD converter
     ATD0CTL3 = 0x18; //Length=3 FIFO=0
     ATD0CTL4 = 0x80; //8-bit resolution
-    ATD0CTL5 = 0x32;
-    //ATD0CTL5 = 0x33; //Left Justified, Unsigned, SCAN=1, MULTI=1, START=3
+    //ATD0CTL5 = 0x32;
+    
+    // Bertha Values
+    ATD0CTL5 = 0x33; //Left Justified, Unsigned, SCAN=1, MULTI=1, START=3
+
+    for(i = 6; i >= 0; i--){//Initialize maze to -1
+        for(j = 6; j >= 0; j--){
+            maze[i][j]= -1;
+        }
+    }
 
     EnableInterrupts;
-    forward(290);
     // Loops forever making the correct turns
-    for(;;) {       
-        forward(500);       
-        right_stationary_turn();        
+    for(;;) {
+ 
+        PTH = 0x00;    
+        forward(STATIONARYDISTANCE);
+        PTH = 0xFF;  
+        forward(STATIONARYDISTANCE);    
+ /*       right_stationary_turn();        
         forward(700);        
         right_pivot_turn();         
         forward(725);     
         right_rolling_turn();        
-        forward(250);
+        forward(300);
         u_turn();        
-        forward(500);
+        forward(495);
         left_stationary_turn();        
-        forward(920);
+        forward(700);
         left_pivot_turn();        
         forward(730);
         left_rolling_turn();        
-        forward(250);
-        u_turn();    
+        forward(300);
+        u_turn();    */
     } /* loop forever */
   /* please make sure that you never leave main */
 }
+
+
+
+
 
 
 #pragma TRAP_PROC
@@ -312,27 +377,33 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
     ramp_count++; 
     read_count++;
     wait_count++;
-
     
     //The Wall follow is commented out for debugging reasons
-    if((read_count%100)==0 && turn_flag!=1){    // Get new reading every 10 ms
+    if((read_count%200)==0 && turn_flag!=1){    // Get new reading every 10 ms
         old_left_prox_derivative = ideal_distance - left_prox; 
         old_right_prox_derivative = ideal_distance - right_prox; 
-        // front_prox = front_butterworth(ATD0DR2H, a1, b1);
-        // left_prox = left_butterworth(ATD0DR1H, a1, b1);
-        // right_prox = right_butterworth(ATD0DR0H, a1, b1);
-        
+        /*
         front_prox = ATD0DR0H;
-        front_filter[i] = front_prox;
-        i++;
-        front_prox = (front_filter[0] + front_filter[1] + front_filter[2] + front_filter[3] + front_filter[4] + front_filter[5] + front_filter[6] + front_filter[7])/8;
-        if (i >= 8) i = 0;
-
-
         left_prox = ATD0DR1H;
         right_prox = ATD0DR2H;
+        */
+        
+        // Bertha Values
+        front_prox = ATD0DR2H;
+        left_prox = ATD0DR1H;
+        right_prox = ATD0DR0H;
+                
+        front_filter[i] = front_prox;
+        left_filter[i] = left_prox;
+        right_filter[i] = right_prox;
+        i++;
+        front_prox = (front_filter[0] + front_filter[1] + front_filter[2] + front_filter[3] + front_filter[4] + front_filter[5] + front_filter[6] + front_filter[7])/8;
+        left_prox = (left_filter[0] + left_filter[1] + left_filter[2] + left_filter[3] + left_filter[4] + left_filter[5] + left_filter[6] + left_filter[7])/8;
+        right_prox = (right_filter[0] + right_filter[1] + right_filter[2] + right_filter[3] + right_filter[4] + right_filter[5] + right_filter[6] + right_filter[7])/8;
+        if (i >= 8) i = 0;
         
         read_count = 0;
+        
         if (left_prox >= max_wall_distance && right_prox >= max_wall_distance){
             ideal_distance = (left_prox + right_prox)/2;    
         }
@@ -364,6 +435,7 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
         left_speed_final = MAX_SPEED;
         
         }
+  
     
     //Front Sensor Control
     }
