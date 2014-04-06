@@ -12,17 +12,17 @@
 #include <stdlib.h>
 
 // Emums for ease of read
-#define MAX_SPEED 20
+#define MAX_SPEED 22
 #define MIN_SPEED 250
 #define FRONT 0
-#define LEFT 1
-#define RIGHT 2
-#define NORTH 0
+#define LEFT 10
+#define RIGHT 20
+#define NORTH 4
 #define EAST 1
 #define SOUTH 2
 #define WEST 3
 
-#define STATIONARYDISTANCE 517
+#define STATIONARYDISTANCE 530
 
 #define UTURN 100
 #define PIVOT 101
@@ -42,14 +42,20 @@ int left_filter[8];
 int front_prox = 0;
 int left_prox = 0;
 int right_prox = 0;
-int old_left_prox_derivative = 0;
-int old_right_prox_derivative = 0;
+int previousErrorL = 0;
+int currentErrorL = 0;
+int errorDirL = 0;
+int previousErrorR = 0;
+int currentErrorR = 0;
+int errorDirR = 0;
 int ave = 0;
 int i = 0;
+static int directionToChangeTo = 0;
 static int read_count=0;
 static int front_temp = 0;
 static int left_temp =  0;
 static int right_temp =  0;
+static char popValue = ' ';
 
 static int left_step_count = 0;
 static int right_step_count = 0;
@@ -69,11 +75,13 @@ static int right_speed = MIN_SPEED-100;
 static int leftPos = 0;
 static int rightPos = 0;
     
-static int rampCoef = 25;
+static int rampCoef = 35;
+
+static int tracebackFlag = 0;
 
 static int u_turn_count = 0;
 static int u_turn_flag = 0;
-static int turn_flag = 0;//Used to stop sensor reading and correction while turning
+static int turn_flag = 1;//Used to stop sensor reading and correction while turning
 
 static unsigned int right_wheel_backwards = 0;//Sets right wheel motion backwards
 static unsigned int left_wheel_backwards = 0;//Sets left wheel motion backwards
@@ -82,32 +90,53 @@ static int wait_time = 100;
 
 static int turn;
 
-static int maze[7][7];
+static short int maze[10][10];
+static short int directionMaze[10][10];
+static char stack[100];
+static int sTop = 0;
+static int uTurnFlag;
 static int x, y;
 static int distance = 0;
 static int direction = NORTH;
-
-
-int ideal_distance = 62; 
+static int lastWall = LEFT;
+static int dumbFlag = 0;
+int ideal_distance = 63; 
 int max_wall_distance = 45;
 // .22 || .55
+// .3  || .6
 float p_value = .22;
-float d_value = .55;
+float d_value = 46;
 
 static char right_chars[8] ={0xC0, 0x40, 0x60, 0x60, 0x30, 0x10, 0x90, 0x80};
 static char left_chars[8] = {0x08, 0x09, 0x01, 0x03, 0x02, 0x06, 0x04, 0x0C};
-                    
+
+void resetFilters() {
+        int j;                      
+        
+        for(i = 0; i < 8; i++) {
+              front_filter[i] = ATD0DR2H;
+              left_filter[i] = ATD0DR1H;
+              right_filter[i] = ATD0DR0H;
+        }
+        
+        front_prox = (front_filter[0] + front_filter[1] + front_filter[2] + front_filter[3] + front_filter[4] + front_filter[5] + front_filter[6] + front_filter[7])/8;
+        left_prox = (left_filter[0] + left_filter[1] + left_filter[2] + left_filter[3] + left_filter[4] + left_filter[5] + left_filter[6] + left_filter[7])/8;
+        right_prox = (right_filter[0] + right_filter[1] + right_filter[2] + right_filter[3] + right_filter[4] + right_filter[5] + right_filter[6] + right_filter[7])/8;
+}
+        
+
+
+
 // Software wait                    
 void wait(int time){
     while((wait_count % time) != 0){}
     wait_count = 0;
 }
 
-// Resets the values of everything after turns
 void resetValues() {
     turn_flag = 0;
     leftPos = rightPos = 4;
-    right_step_count = left_step_count = 10; 
+    right_step_count = left_step_count = 0; 
     right_wheel_backwards = left_wheel_backwards = 0;
     //right_speed = left_speed = MAX_SPEED;
     right_speed_final = left_speed_final = MAX_SPEED;
@@ -115,125 +144,248 @@ void resetValues() {
     wait(20); 
 }
 
-// Moves forward for a given distance, if the front prox reaches a certain distance, it jumps out
-void forward(int distance){
-      
-    leftPos = 4; //Reset Wheel Position
-    rightPos = 4;
-
-    right_step_count = left_step_count = distance;   
-   
-    while(right_step_count >=0 || left_step_count >=0){
-    /*
-        if((turn == UTURN) && (front_prox >= 77) && (ATD0DR0H >= 77)) right_step_count = left_step_count = 0;
-        if((turn == STATIONARY) && (front_prox >= 80) && (ATD0DR0H >= 80)) right_step_count = left_step_count = 0;
-        if((turn == PIVOT) && (front_prox >= 45) && (ATD0DR0H >= 45)) right_step_count = left_step_count = 0;
-      //  if((turn == ROLLING) && (front_prox >= 50)) right_step_count = left_step_count = 0;
-    */
-    }
-    
-    resetValues();
-    wait(wait_time);
-}
-
-// Right Pivot Turn
-void right_pivot_turn(){
-    //Reset Wheel Position
-    leftPos = 4; 
-    rightPos = 4;
-    // Moves forward a little
-    resetValues();
-    wait(wait_time);
-    PTH = 0x24;
-    turn_flag = 1;
-    leftPos = rightPos = 4;
-    // Sets the speeds of the wheels to do the turn
-    right_speed = right_speed_final = MIN_SPEED+60;
-    left_speed = left_speed_final = MAX_SPEED;
-    right_step_count = 0;
-    left_step_count = 147;
-    while(right_step_count >=0 || left_step_count >=0){}
-    resetValues();
-    wait(wait_time);
-    // Next turn is now rolling
-    turn = ROLLING;
-}
-
-void left_pivot_turn(){
-    leftPos = 4; //Reset Wheel Position
-    rightPos = 4;
-    resetValues();
-    wait(wait_time);   
-    PTH = 0x02;
-    turn_flag = 1;
-    leftPos = rightPos = 4; //Reset Wheel Position
-    right_speed = right_speed_final = MAX_SPEED;
-    left_speed = left_speed_final = MIN_SPEED+60;
-    right_step_count = 147;
-    left_step_count = 0;
-    while(right_step_count >=0 || left_step_count >=0){}
-    resetValues();
-    wait(wait_time);
-    turn = ROLLING;  
-}
-
-void right_stationary_turn(){
-    turn_flag = 1;
-    right_speed_final = left_speed_final = MAX_SPEED; 
-    PTH = 0x79;
-    turn_flag = 1;
-    right_speed_final = left_speed_final = 200;
-    while(right_speed < 150 || left_speed < 150){};
-    leftPos = rightPos = 4; //Reset Wheel Position
-    right_speed_final = MAX_SPEED;
-    left_speed_final = MAX_SPEED;
-    right_wheel_backwards = 1;
-    right_step_count = left_step_count = 180;    
-    while(right_step_count >=0 || left_step_count >=0){}    
-    resetValues(); 
-    wait(wait_time);    
-    turn = PIVOT;
-}
-
 void left_stationary_turn(){
     turn_flag = 1;
-    right_speed_final = left_speed_final = MAX_SPEED; // To Minimize slippage
-    PTH = 0x12;
-    turn_flag = 1;
-    right_speed_final = left_speed_final = 200;
-    while(right_speed < 150 || left_speed < 150){};
     leftPos = rightPos = 4; //Reset Wheel Position
-    right_speed_final = MAX_SPEED;
-    left_speed_final = MAX_SPEED; 
+    right_speed_final = 30;
+    left_speed_final = 30; 
     left_wheel_backwards = 1;
-    right_step_count = left_step_count = 165;    
+    right_step_count = left_step_count = 200;    
+    while(right_step_count >=0 || left_step_count >=0){}
+    
+    if (direction == NORTH) {
+       direction = EAST;
+    } else if ((direction == EAST)) {
+      direction = SOUTH;
+    } else if ((direction == SOUTH) ) {
+       direction = WEST;
+    } else if ((direction == WEST) ) {
+      direction = NORTH;
+    } 
+       
+    resetValues();
+    resetFilters(); 
+    //wait(wait_time);    
+    
+}
+
+void right_stationary_turn(){  /*
+    turn_flag = 1; 
+    leftPos = rightPos = 4; //Reset Wheel Position
+    right_speed_final = 45;
+    left_speed_final = 45;
+    right_wheel_backwards = 1;
+    right_step_count = left_step_count = 200;    
     while(right_step_count >=0 || left_step_count >=0){}    
     resetValues(); 
-    wait(wait_time);    
-    turn = PIVOT;
+    //wait(wait_time); 
+    */
+    left_stationary_turn();
+    left_stationary_turn();
+    left_stationary_turn();   
+    
 }
+
+
 
 void u_turn(){
     turn_flag = 1;
     right_speed_final = left_speed_final = 32;// To Minimize spillage
-    PTH = 0x19;
     turn_flag = 1;
     leftPos = rightPos = 4; //Reset Wheel Position
     right_speed_final = MAX_SPEED+20;
     left_speed_final = MAX_SPEED+20;    
     left_wheel_backwards = 1;
-    right_step_count = 410;
-    left_step_count = 410;
+    right_step_count = 415;
+    left_step_count = 415;
     while(right_step_count >=0 || left_step_count >=0){}
     resetValues(); 
-    wait(wait_time);    
-    turn = STATIONARY;
+    //wait(wait_time);    
+    
 }
 
+               
+int orientate(){
+        if(
+            (
+             (direction == NORTH) &&
+               (
+                ((front_prox < 40) && (maze[x][y+1] == -1)) ||
+                ((left_prox < 40) && (maze[x-1][y] == -1)) ||
+                ((right_prox < 40) && (maze[x+1][y] == -1))  
+               )
+            ) ||
+            (
+             (direction == SOUTH) &&
+               (
+                ((front_prox < 40) && (maze[x][y-1] == -1)) ||
+                ((left_prox < 40) && (maze[x+1][y] == -1)) ||
+                ((right_prox < 40) && (maze[x-1][y] == -1))
+               )
+            ) ||                
+            (
+             (direction == WEST) &&
+               (
+                ((front_prox < 40) && (maze[x-1][y] == -1)) ||
+                ((left_prox < 40) && (maze[x][y-1] == -1)) ||
+                ((right_prox < 40) && (maze[x][y+1] == -1))
+               )
+            ) ||                
+            (
+             (direction == EAST) &&
+               (
+                ((front_prox < 40) && (maze[x+1][y] == -1)) ||
+                ((left_prox < 40) && (maze[x][y+1] == -1)) ||
+                ((right_prox < 40) && (maze[x][y-1] == -1))
+               )
+            )                
+          ) {
+               if(direction == NORTH) {
+                switch(directionMaze[x][y]) {
+                        case 3:
+                                left_stationary_turn();
+                                break;
+                        case 2: 
+                                u_turn();
+                                break;
+                        case 1:
+                                right_stationary_turn();
+                                break;
+                        default:
+                                break;               
+                }
+               } else if(direction == EAST) {
+                switch(directionMaze[x][y]) {
+                        case 4:
+                                left_stationary_turn();
+                                break;
+                        case 3: 
+                                u_turn();
+                                break;
+                        case 2:
+                                right_stationary_turn();
+                                break;
+                        default:
+                                break;               
+                }
+               } else if(direction == SOUTH) {
+                switch(directionMaze[x][y]) {
+                        case 1:
+                                left_stationary_turn();
+                                break;
+                        case 4: 
+                                u_turn();
+                                break;
+                        case 3:
+                                right_stationary_turn();
+                                break;
+                        default:
+                                break;               
+                }
+               } else if(direction == WEST) {
+                switch(directionMaze[x][y]) {
+                        case 2:
+                                left_stationary_turn();
+                                break;
+                        case 1: 
+                                u_turn();
+                                break;
+                        case 4:
+                                right_stationary_turn();
+                                break;
+                        default:
+                                break;               
+                }
+               }
+             return 1;
+          } else {
+                return 0;
+          }
+      
+}
+
+char pop(){
+ return stack[--sTop];       
+}
+
+int push(char temp){
+        if(sTop == 99)
+        return 0;//Fail, to big for array
+        
+        stack[sTop++] = temp;
+        return 1;
+}
+
+void MSDelay(unsigned int itime)
+{
+  unsigned int i; unsigned int j;
+  for(i=0;i<itime;i++)
+  for(j=0;j<1000;j++);
+}
+  void COMWRT4(unsigned char command)
+  {
+        unsigned char x;
+        
+        x = (command & 0xF0) >> 2;         //shift high nibble to center of byte for Pk5-Pk2
+        LCD_DATA =LCD_DATA & ~0x3C;          //clear bits Pk5-Pk2
+        LCD_DATA = LCD_DATA | x;          //sends high nibble to PORTK
+        MSDelay(1);
+        LCD_CTRL = LCD_CTRL & ~RS;         //set RS to command (RS=0)
+        MSDelay(1);
+        LCD_CTRL = LCD_CTRL | EN;          //rais enable
+        MSDelay(5);
+        LCD_CTRL = LCD_CTRL & ~EN;         //Drop enable to capture command
+        MSDelay(15);                       //wait
+        x = (command & 0x0F)<< 2;          // shift low nibble to center of byte for Pk5-Pk2
+        LCD_DATA =LCD_DATA & ~0x3C;         //clear bits Pk5-Pk2
+        LCD_DATA =LCD_DATA | x;             //send low nibble to PORTK
+        LCD_CTRL = LCD_CTRL | EN;          //rais enable
+        MSDelay(5);
+        LCD_CTRL = LCD_CTRL & ~EN;         //drop enable to capture command
+        MSDelay(15);
+  }
+
+  void DATWRT4(unsigned char data)
+  {
+    unsigned char x;
+
+        x = (data & 0xF0) >> 2;
+        LCD_DATA =LCD_DATA & ~0x3C;                     
+        LCD_DATA = LCD_DATA | x;
+        MSDelay(1);
+        LCD_CTRL = LCD_CTRL | RS;
+        MSDelay(1);
+        LCD_CTRL = LCD_CTRL | EN;
+        MSDelay(1);
+        LCD_CTRL = LCD_CTRL & ~EN;
+        MSDelay(5);
+       
+        x = (data & 0x0F)<< 2;
+        LCD_DATA =LCD_DATA & ~0x3C;                     
+        LCD_DATA = LCD_DATA | x;
+        LCD_CTRL = LCD_CTRL | EN;
+        MSDelay(1);
+        LCD_CTRL = LCD_CTRL & ~EN;
+        MSDelay(15);
+  }
+
+// Moves forward for a given distance, if the front prox reaches a certain distance, it jumps out
+void forward(int distance){
+      
+    leftPos = 4; //Reset Wheel Position
+    rightPos = 4;
+    right_step_count = left_step_count = distance; 
+    while(right_step_count >=0 || left_step_count >=0){
+        if(front_prox >= 62 && ATD0DR0H >= 62) right_step_count = left_step_count = 0;   
+    }    
+    resetValues();
+    wait(wait_time);
+}
+
+
+
 void right_rolling_turn(){//Doesn't Work for some reason
-    wait(wait_time*500);
     turn_flag = 1;    
-    PTH = 0x30;
     leftPos = rightPos = 4; //Reset Wheel Position
     right_speed = right_speed_final = MAX_SPEED*2.5;
     left_speed = left_speed_final = MAX_SPEED;    
@@ -246,8 +398,6 @@ void right_rolling_turn(){//Doesn't Work for some reason
 }
 
 void left_rolling_turn(){ 
-    wait(wait_time*500);
-    PTH = 0x78;
     turn_flag = 1;     
     leftPos = rightPos = 4; //Reset Wheel Position
     right_speed = right_speed_final = MAX_SPEED;
@@ -261,54 +411,223 @@ void left_rolling_turn(){
 }    
 
 void explore(){
+    int oldDirection = 0;
+    int makeTurnFlag = 0;
+    static char digits[10] = {0};
+    int position;
+    char directionWrite;
     if(maze[x][y]==-1) distance++;
     else distance--;
-    if(front_prox < 40) {
-        forward(STATIONARYDISTANCE);
-        if (direction == NORTH && (maze[x][y+1] == -1)) y++;
-        if (direction == EAST && (maze[x+1][y] == -1)) x++;
-        if (direction == SOUTH && (maze[x][y-1] == -1)) y--;
-        if (direction == WEST && (maze[x-1][y] == -1)) x--;
-        if(maze[x][y] == -1) maze[x][y] = distance;            
-        explore();
+    
+    
+
+    COMWRT4(0x01); // Clears display
+    MSDelay(1);
+   
+    if(right_prox>40) DATWRT4('|');
+    else DATWRT4(' ');     
+    if(front_prox>40) DATWRT4('-');
+    else DATWRT4(' '); 
+    if(left_prox>40) DATWRT4('|');
+    else DATWRT4(' ');
+    DATWRT4('[');            
+    position = sprintf(digits,"%d", x);
+    DATWRT4(digits[0]);
+    DATWRT4(']');
+    DATWRT4('[');
+    position = sprintf(digits,"%d", y);
+    DATWRT4(digits[0]);
+    DATWRT4(']');
+    COMWRT4(0xC0); // Moves to second line ;    
+    switch(direction) {
+      case NORTH:
+        directionWrite = 'N';
+        break;
+      case EAST:
+        directionWrite = 'E';
+        break;
+      case WEST:
+        directionWrite = 'W';
+        break;
+      case SOUTH:
+        directionWrite = 'S';
+        break;
     }
+    DATWRT4(directionWrite);
+    DATWRT4(' ');
+    
+    right_speed_final = left_speed_final = right_speed = left_speed = 400;
+    wait(2000);       
+    if(front_prox < 40) {
+        DATWRT4('F');
+        directionMaze[x][y] = direction;
+        if ((direction == NORTH) && (maze[x][y+1] == -1)) {
+                y++;
+                makeTurnFlag = 1;
+        }
+        else if ((direction == EAST) && (maze[x+1][y] == -1)) {
+                x++;
+                makeTurnFlag = 1;
+        }
+        else if ((direction == SOUTH) && (maze[x][y-1] == -1)) {
+                y--;
+                makeTurnFlag = 1;
+        }
+        else if ((direction == WEST) && (maze[x-1][y] == -1)) {
+                x--;
+                makeTurnFlag = 1;
+        }
+        if(makeTurnFlag == 1) {
+                push('F');
+                maze[x][y] = distance;
+                tracebackFlag = 1;
+                forward(STATIONARYDISTANCE); 
+                explore();
+                orientate();
+                resetFilters();
+        }
+    }
+    
     if(right_prox < 40){
-        right_stationary_turn();            
-        if (direction == NORTH) direction = EAST;
-        if (direction == EAST) direction = SOUTH;
-        if (direction == SOUTH) direction = WEST;
-        if (direction == WEST) direction = NORTH;    
-        explore();
-    }
+        DATWRT4('R');  
+                    
+        if ((direction == NORTH) && maze[x+1][y] == -1) {
+                makeTurnFlag = 1;
+        } else if ((direction == EAST) && (maze[x][y+1] == -1)) {
+                makeTurnFlag = 1;
+        } else if ((direction == SOUTH) && (maze[x-1][y] == -1)) {
+                makeTurnFlag = 1;
+        } else if ((direction == WEST) && (maze[x][y-1] == -1)) {; 
+                makeTurnFlag = 1;
+        }
+        if(makeTurnFlag == 1) {
+                push('R');
+                right_stationary_turn();
+                explore();
+                orientate();
+                resetFilters();
+        }
+    } 
+    
     if(left_prox < 40){
-        left_stationary_turn();
-        if (direction == NORTH) direction = WEST;
-        if (direction == EAST) direction = NORTH;
-        if (direction == SOUTH) direction = EAST;
-        if (direction == WEST) direction = SOUTH;
-        explore();
+        DATWRT4('L');
+        if (direction == NORTH && maze[x-1][y] == -1) {
+                makeTurnFlag = 1;
+        } else if ((direction == EAST) && (maze[x][y-1] == -1 )) {
+                makeTurnFlag = 1;
+        } else if ((direction == SOUTH) && (maze[x+1][y] == -1)) {
+                makeTurnFlag = 1;
+        } else if ((direction == WEST) && (maze[x][y+1] == -1)) {
+                makeTurnFlag = 1;
+        }
+        if(makeTurnFlag == 1) {
+                push('L');
+                left_stationary_turn();
+                explore();
+                orientate();
+                resetFilters();
+                
+        }
     }
-    if(front_prox < 40) {
-        forward(517);
-        if (direction == NORTH) y++;
-        if (direction == EAST) x++;
-        if (direction == SOUTH) y--;
-        if (direction == WEST) x--;           
-        explore();
+    
+  
+    
+    if(tracebackFlag == 1) {
+        u_turn();
+        tracebackFlag = 0;
+        DATWRT4('U');
+        
+        if (direction == NORTH) {
+                direction = SOUTH;
+              
+        } else if ((direction == EAST)) {
+                direction = WEST;
+               
+        } else if ((direction == SOUTH) ) {
+                direction = NORTH;
+               
+        } else if ((direction == WEST) ) {
+                direction = EAST;
+        }
     }
-    u_turn();
-    if (direction == NORTH) direction = SOUTH;
-    if (direction == EAST) direction = WEST;
-    if (direction == SOUTH) direction = NORTH;
-    if (direction == WEST) direction = EAST;
-    explore();
+    
+    COMWRT4(0x01); // Clears display
+    MSDelay(1);
+   
+    if(right_prox>40) DATWRT4('|');
+    else DATWRT4(' ');     
+    if(front_prox>40) DATWRT4('-');
+    else DATWRT4(' '); 
+    if(left_prox>40) DATWRT4('|');
+    else DATWRT4(' ');
+    DATWRT4('[');            
+    position = sprintf(digits,"%d", x);
+    DATWRT4(digits[0]);
+    DATWRT4(']');
+    DATWRT4('[');
+    position = sprintf(digits,"%d", y);
+    DATWRT4(digits[0]);
+    DATWRT4(']');
+    COMWRT4(0xC0); // Moves to second line ;    
+    switch(direction) {
+      case NORTH:
+        directionWrite = 'N';
+        break;
+      case EAST:
+        directionWrite = 'E';
+        break;
+      case WEST:
+        directionWrite = 'W';
+        break;
+      case SOUTH:
+        directionWrite = 'S';
+        break;
+    }
+    DATWRT4(directionWrite);
+    DATWRT4(' ');
+    
+    popValue = pop();
+    for(i = 7; i >= 0; i--){
+            front_filter[i]=50;
+        }
+    right_speed_final = left_speed_final = right_speed = left_speed = 400;
+    wait(2000);
+    front_prox = 20;
+    switch(popValue){
+        case 'F': DATWRT4('F');   
+                if ((direction == NORTH)) {
+                        y++;
+                }
+                else if ((direction == EAST)) {
+                        x++;
+                }
+                else if ((direction == SOUTH)) {
+                        y--;
+                }
+                else if ((direction == WEST)) {
+                        x--;
+                }                         
+                forward(STATIONARYDISTANCE); break;
+        
+        case 'L':
+                DATWRT4('L');
+                right_stationary_turn(); break;
+        
+        case 'R': DATWRT4('R');
+                left_stationary_turn(); break;
+    }
+    
 }
 
 void main(void) {
     int j=0;
     x = y =0;
+    maze[x][y] = 0;
+    
     SYNR = 2;
     REFDV = 0;
+
+
 
 
     while(!(CRGFLG&0x08)){}
@@ -321,7 +640,16 @@ void main(void) {
     DDRK=0xFF;
     DDRB=0xFF;
     DDRH=0xFF;
-    
+  
+    DDRK = 0xFF;
+    COMWRT4(0x33); //reset sequence provided by data sheet
+    COMWRT4(0x32); //reset sequence provided by data sheet
+    COMWRT4(0x28);;
+    COMWRT4(0x06);
+    COMWRT4(0x0E);
+    COMWRT4(0x01);
+    COMWRT4(0x80);
+
     ATD0CTL2 = 0x80; //Turns on ATD converter
     ATD0CTL3 = 0x18; //Length=3 FIFO=0
     ATD0CTL4 = 0x80; //8-bit resolution
@@ -335,32 +663,12 @@ void main(void) {
             maze[i][j]= -1;
         }
     }
-
+;
     EnableInterrupts;
+    resetValues();
+    explore();
     // Loops forever making the correct turns
-    for(;;) {
- 
-        PTH = 0x00;    
-        forward(STATIONARYDISTANCE);
-        PTH = 0xFF;  
-        forward(STATIONARYDISTANCE);    
- /*       right_stationary_turn();        
-        forward(700);        
-        right_pivot_turn();         
-        forward(725);     
-        right_rolling_turn();        
-        forward(300);
-        u_turn();        
-        forward(495);
-        left_stationary_turn();        
-        forward(700);
-        left_pivot_turn();        
-        forward(730);
-        left_rolling_turn();        
-        forward(300);
-        u_turn();    */
-    } /* loop forever */
-  /* please make sure that you never leave main */
+    for(;;) { }
 }
 
 
@@ -379,9 +687,8 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
     wait_count++;
     
     //The Wall follow is commented out for debugging reasons
-    if((read_count%200)==0 && turn_flag!=1){    // Get new reading every 10 ms
-        old_left_prox_derivative = ideal_distance - left_prox; 
-        old_right_prox_derivative = ideal_distance - right_prox; 
+    if((read_count%100)==0 && turn_flag!=1){    // Get new reading every 10 ms
+
         /*
         front_prox = ATD0DR0H;
         left_prox = ATD0DR1H;
@@ -402,42 +709,60 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
         right_prox = (right_filter[0] + right_filter[1] + right_filter[2] + right_filter[3] + right_filter[4] + right_filter[5] + right_filter[6] + right_filter[7])/8;
         if (i >= 8) i = 0;
         
+
+        previousErrorR = currentErrorR;
+        currentErrorR = ideal_distance - right_prox;
+        errorDirR = currentErrorR - previousErrorR;
+
+
+        previousErrorL = currentErrorL;
+        currentErrorL = ideal_distance - left_prox;
+        errorDirL = currentErrorL - previousErrorL;        
+
         read_count = 0;
         
-        if (left_prox >= max_wall_distance && right_prox >= max_wall_distance){
-            ideal_distance = (left_prox + right_prox)/2;    
+     if(lastWall == LEFT) {                
+                  if(left_prox > max_wall_distance && turn_flag != 1) {
+                         lastWall = LEFT;
+                        if(left_prox < ideal_distance) {
+                                right_speed_final = MAX_SPEED;
+                                left_speed_final = MAX_SPEED + (p_value * (ideal_distance - left_prox)) + (d_value * errorDirL);
+                        } else {
+                                left_speed_final  = MAX_SPEED;
+                                right_speed_final  = MAX_SPEED + (-p_value * ( ideal_distance - left_prox)) + (-d_value * errorDirL);
+                        }
+                  } else if(left_prox < max_wall_distance && right_prox > max_wall_distance && turn_flag!=1) {
+                        lastWall = RIGHT;
+                        if (right_prox < (ideal_distance)){//If too far from right wall correct        
+                                left_speed_final  = MAX_SPEED;
+                                right_speed_final  = MAX_SPEED +(p_value * (ideal_distance - right_prox)) + (d_value * errorDirR); 
+                        } else{     //If too close to right wall correct   
+                                right_speed_final  = MAX_SPEED;
+                                left_speed_final  = MAX_SPEED +(-p_value * (ideal_distance - right_prox)) + (-d_value * errorDirR); 
+                        }
+                 } else right_speed_final = left_speed_final = MAX_SPEED;
+     }
+        if(lastWall == RIGHT) { 
+            if(right_prox > max_wall_distance && turn_flag != 1) {
+                 lastWall = RIGHT;
+                 if(right_prox < ideal_distance) {
+                       left_speed_final  = MAX_SPEED;
+                       right_speed_final  = MAX_SPEED +(p_value * (ideal_distance - right_prox)) + (d_value * errorDirR);
+                 } else {     //If too close to right wall correct   
+                       right_speed_final  = MAX_SPEED;
+                       left_speed_final  = MAX_SPEED +(-p_value * (ideal_distance - right_prox)) + (-d_value * errorDirR);
+                 }
+              } else if(right_prox < max_wall_distance && left_prox > max_wall_distance && turn_flag != 1) {
+                 lastWall = LEFT;
+                 if(left_prox < ideal_distance) {
+                        right_speed_final = MAX_SPEED;
+                        left_speed_final = MAX_SPEED + (p_value * (ideal_distance - left_prox)) + (d_value * errorDirL);
+                 } else {
+                        left_speed_final  = MAX_SPEED;
+                        right_speed_final  = MAX_SPEED +(-p_value * ( ideal_distance - left_prox)) + (-d_value * errorDirL);
+                 }
+            } else right_speed_final = left_speed_final = MAX_SPEED;     
         }
-
-        if (left_prox > max_wall_distance  && turn_flag!=1){    
-            //Left Sensor Control
-            if (left_prox < (ideal_distance)){//If too far from left wall correct        
-               right_speed_final  = MAX_SPEED;
-               left_speed_final  = MAX_SPEED +(p_value * (ideal_distance - left_prox)) + (d_value * old_left_prox_derivative); 
-               }else{     //If too close to left wall correct   
-                   left_speed_final  = MAX_SPEED;
-                   right_speed_final  = MAX_SPEED +(-p_value * ( ideal_distance - left_prox)) + (-d_value * old_left_prox_derivative); 
-            }
-        }
-        
-        if (left_prox < max_wall_distance && right_prox > max_wall_distance && turn_flag!=1){
-            //Right Sensor Control 
-            if (right_prox < (ideal_distance)){//If too far from right wall correct        
-               left_speed_final  = MAX_SPEED;
-               right_speed_final  = MAX_SPEED +(p_value * (ideal_distance - right_prox)) + (d_value * old_right_prox_derivative); 
-               }else{     //If too close to right wall correct   
-                   right_speed_final  = MAX_SPEED;
-                   left_speed_final  = MAX_SPEED +(-p_value * (ideal_distance - right_prox)) + (-d_value * old_right_prox_derivative); 
-            }
-        }
-
-        if (left_prox <= max_wall_distance && right_prox <= max_wall_distance && turn_flag!=1){
-        right_speed_final = MAX_SPEED;
-        left_speed_final = MAX_SPEED;
-        
-        }
-  
-    
-    //Front Sensor Control
     }
     
     // Ramping   
@@ -493,4 +818,4 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
      
   
   PORTB = left_chars[leftPos] + right_chars[rightPos];
-}
+    }
