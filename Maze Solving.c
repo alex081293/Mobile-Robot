@@ -399,81 +399,111 @@ void explore(){
     else if(front_prox < 40) { 
         
         switch(direction) {
-                case NORTH:
-                        if(((maze[x-1][y] != -1) || (left_prox > 40)) && ((maze[x+1][y] != -1) || (right_prox > 40)) && (explored[x][y] != 1)){                                
-                                exploreFlag = 1;
-                                if(exploredSet ==0){
-                                        popValue = pop();
-                                        switch(popValue){
-                                                case 'F':push('F');break;
-                                                case 'L':push('R');break;
-                                                case 'R':push('L');break;
-                                        }
-                                }
-                                exploredSet=1;
+            case NORTH:
+                if (((maze[x-1][y] != -1) || (left_prox > 40)) && ((maze[x+1][y] != -1) || (right_prox > 40)) && (explored[x][y] != 1)) {                                
+                    exploreFlag = 1;
+                    if (exploredSet ==0) {
+                        popValue = pop();
+                        switch(popValue){
+                            case 'F':
+                                push('F');
+                                break;
+                            case 'L':
+                                push('R');
+                                break;
+                            case 'R':
+                                push('L');
+                                break;
                         }
-                        break;
-                case SOUTH:
-                         if(((maze[x-1][y] != -1) || (right_prox > 40)) && ((maze[x+1][y] != -1) || (left_prox > 40)) && (explored[x][y] != 1)){
-                                exploreFlag = 1;
-                                if(exploredSet ==0){
-                                        popValue = pop();
-                                        switch(popValue){
-                                                case 'F':push('F');break;
-                                                case 'L':push('R');break;
-                                                case 'R':push('L');break;
-                                        }
-                                }
-                                exploredSet=1;
+                    }
+                    exploredSet=1;
+                }
+                break;
+            case SOUTH:
+                 if (((maze[x-1][y] != -1) || (right_prox > 40)) && ((maze[x+1][y] != -1) || (left_prox > 40)) && (explored[x][y] != 1)) {
+                    exploreFlag = 1;
+                    if (exploredSet ==0) {
+                        popValue = pop();
+                        switch(popValue){
+                            case 'F':
+                                push('F');
+                                break;
+                            case 'L':
+                                push('R');
+                                break;
+                            case 'R':
+                                push('L');
+                                break;
                         }
-                        break;                       
-                case EAST:
-                         if(((maze[x][y-1] != -1) || (right_prox > 40)) && ((maze[x][y+1] != -1) || (left_prox > 40)) && (explored[x][y] != 1)) {
-                                exploreFlag = 1;
-                                if(exploredSet ==0){
-                                        popValue = pop();
-                                        switch(popValue){
-                                                case 'F':push('F');break;
-                                                case 'L':push('R');break;
-                                                case 'R':push('L');break;
-                                        }
-                                }
-                                exploredSet=1;
-                         }
-                        break;
-                case WEST:
-                        if(((maze[x][y-1] != -1) || (right_prox > 40))&& ((maze[x][y+1] != -1) || (right_prox > 40)) && (explored[x][y] != 1)) {
-                                exploreFlag = 1;
-                                if(exploredSet ==0){
-                                        popValue = pop();
-                                        switch(popValue){
-                                                case 'F':push('F');break;
-                                                case 'L':push('R');break;
-                                                case 'R':push('L');break;
-                                        }
-                                }
-                                exploredSet=1;
+                    }
+                    exploredSet=1;
+                }
+                break;                       
+            case EAST:
+                 if (((maze[x][y-1] != -1) || (right_prox > 40)) && ((maze[x][y+1] != -1) || (left_prox > 40)) && (explored[x][y] != 1)) {
+                    exploreFlag = 1;
+                    if (exploredSet ==0) {
+                        popValue = pop();
+                        switch(popValue){
+                            case 'F':
+                                push('F');
+                                break;
+                            case 'L':
+                                push('R');
+                                break;
+                            case 'R':
+                                push('L');
+                                break;
                         }
-                        break;
+                    }
+                    exploredSet=1;
+                 }
+                break;
+            case WEST:
+                if (((maze[x][y-1] != -1) || (right_prox > 40))&& ((maze[x][y+1] != -1) || (right_prox > 40)) && (explored[x][y] != 1)) {
+                    exploreFlag = 1;
+                    if (exploredSet ==0) {
+                        popValue = pop();
+                        switch(popValue) {
+                            case 'F':
+                                push('F');
+                                break;
+                            case 'L':
+                                push('R');
+                                break;
+                            case 'R':
+                                push('L');
+                                break;
+                        }
+                    }
+                    exploredSet=1;
+                }
+                break;
         }
         
         if ((direction == NORTH) && (maze[x][y+1] == -1)) {
-                if(right_prox > 40 && left_prox > 40 && explored[x][y] != 1){
-                        explored[x][y] = 1;
-                        if(exploredSet ==0){
-                                popValue = pop();
-                                switch(popValue){
-                                         case 'F':push('F');break;
-                                         case 'L':push('R');break;
-                                         case 'R':push('L');break;
-                                }
+            if(right_prox > 40 && left_prox > 40 && explored[x][y] != 1){
+                explored[x][y] = 1;
+                if(exploredSet ==0){
+                        popValue = pop();
+                        switch(popValue){
+                            case 'F':
+                                push('F');
+                                break;
+                            case 'L':
+                                push('R');
+                                break;
+                            case 'R':
+                                push('L');
+                                break;
                         }
-                        exploredSet=1;
                 }
-                mazeTurn[x][y]--;
-                maze[x][y] = ++distance;              
-                y++;
-                makeTurnFlag = 1;
+                exploredSet=1;
+            }
+            mazeTurn[x][y]--;
+            maze[x][y] = ++distance;              
+            y++;
+            makeTurnFlag = 1;
         }
   
         else if ((direction == EAST) && (maze[x+1][y] == -1)) {
