@@ -170,8 +170,8 @@ void resetFilters() {
         
 
 // Software wait                    
-void wait(int time){
-        while((wait_count % time) != 0){}
+void wait(int time) {
+        while ((wait_count % time) != 0) {}
         wait_count = 0;
 }
 
@@ -184,20 +184,20 @@ void resetValues() {
 }
 
 // Moves forward for a given distance, if the front prox reaches a certain distance, it jumps out
-void forward(int forwardDistance){
+void forward (int forwardDistance) {
      
     leftPos = 4; //Reset Wheel Position
     rightPos = 4;
     right_step_count = left_step_count = forwardDistance; 
-    while(right_step_count >=0 || left_step_count >=0){
-        if(front_prox >= 62 && ATD0DR0H >= 62) right_step_count = left_step_count = 0;   
+    while (right_step_count >=0 || left_step_count >=0) {
+        if (front_prox >= 62 && ATD0DR0H >= 62) right_step_count = left_step_count = 0;   
     }    
     resetValues();
  //   wait(wait_time);
 }
 
 
-void left_stationary_turn(){
+void left_stationary_turn() {
     turn_flag = 1;
     right_speed = left_speed = 100;
     left_speed_final = right_speed_final = MAX_SPEED; 
@@ -208,7 +208,7 @@ void left_stationary_turn(){
     resetFilters();
     forward(15);
     doNotMove = 1;
-    if(right_prox < 40 || left_prox < 40) {
+    if (right_prox < 40 || left_prox < 40) {
         doNotMove = 1;    
         wait(2000);
         doNotMove = 0;
@@ -220,13 +220,12 @@ void left_stationary_turn(){
 void right_stationary_turn(){
     int changeDirection = direction; 
     
-
     turn_flag = 1;
     right_speed = left_speed = 100;
     right_speed_final = left_speed_final = MAX_SPEED; 
     right_wheel_backwards = 1;
     right_step_count = left_step_count = 195;    
-    while(right_step_count >=0 || left_step_count >=0){}
+    while (right_step_count >=0 || left_step_count >=0) {}
     resetValues();
     resetFilters();
     forward(15);
@@ -238,11 +237,8 @@ void right_stationary_turn(){
     } 
     resetValues();
     resetFilters();
-     
       
 }
-
-
 
 void u_turn(){
     turn_flag = 1;
@@ -255,9 +251,7 @@ void u_turn(){
     right_step_count = 431;
     left_step_count = 431;
     while(right_step_count >=0 || left_step_count >=0){}
-    resetValues(); 
-    //wait(wait_time);    
-    
+    resetValues();     
 }
        
 
@@ -291,32 +285,30 @@ void explore(){
     int i, j;
     
     resetFilters();
-    for(i = 0; i < 7; i++){
-        for(j = 0; j < 7; j++){
-                       if(i != 4 || j !=4){
-                        
-                                //if(maze[0][j] == -1 && maze[0][j+1] !=-1 && maze[0][j-1] !=-1 && maze[1][j] !=-1 )//Check along left edge 
-                                if(maze[0][j] == -1 && maze[0][j+1] !=-1 && maze[0][j-1] !=-1)
-                                        maze[i][j] = 100;
-                                
-                                //if(maze[i][0] == -1 && maze[i+1][0] !=-1 && maze[i-1][0] !=-1 && maze[i][1] !=-1 )//Check along bottom edge
-                                if(maze[i][0] == -1 && maze[i+1][0] !=-1 && maze[i-1][0] !=-1) 
-                                        maze[i][j] = 100;
-                                
-                                //if(maze[6][j] == -1 && maze[6][j+1] !=-1 && maze[6][j-1] !=-1 && maze[5][j] !=-1 )//Check along right edge
-                                if(maze[6][j] == -1 && maze[6][j+1] !=-1 && maze[6][j-1] !=-1) 
-                                        maze[i][j] = 100;
-                                
-                                //if(maze[i][6] == -1 && maze[i+1][6] !=-1 && maze[i-1][6] !=-1 && maze[i][5] !=-1 )//Check along top edge
-                                if(maze[i][6] == -1 && maze[i+1][6] !=-1 && maze[i-1][6] !=-1) 
-                                        maze[i][j] = 100;
-                                
-                                if(maze[i][j] == -1 && maze[i+1][j] !=-1 && maze[i-1][j] !=-1  && maze[i][j+1] !=-1 && maze[i][j-1] !=-1)//Check insides 
-                                        maze[i][j] = 100;
-                       }
-                }
+    for (i = 0; i < 7; i++) {
+        for (j = 0; j < 7; j++) {
+               if (i != 4 || j !=4) {
+                //Check along left edge 
+                if (maze[0][j] == -1 && maze[0][j+1] !=-1 && maze[0][j-1] !=-1)
+                        maze[i][j] = 100;
+                
+                //Check along bottom edge
+                if (maze[i][0] == -1 && maze[i+1][0] !=-1 && maze[i-1][0] !=-1) 
+                        maze[i][j] = 100;
+                
+                //Check along right edge
+                if (maze[6][j] == -1 && maze[6][j+1] !=-1 && maze[6][j-1] !=-1) 
+                        maze[i][j] = 100;
+                
+                //Check along top edge
+                if (maze[i][6] == -1 && maze[i+1][6] !=-1 && maze[i-1][6] !=-1) 
+                        maze[i][j] = 100;
+                
+                if (maze[i][j] == -1 && maze[i+1][j] !=-1 && maze[i-1][j] !=-1  && maze[i][j+1] !=-1 && maze[i][j-1] !=-1)//Check insides 
+                        maze[i][j] = 100;
+            }
         }
-    
+    }
 
     COMWRT4(0x01); // Clears display
     MSDelay(1);
@@ -727,14 +719,14 @@ void explore(){
     
     if(right_prox < 40){
         int makeTurnFlagR = 0; 
-        if( explored[x][y] != 1){
+        if (explored[x][y] != 1){
             explored[x][y] = 1;
             if(exploredSet ==0){
                 popValue = pop();
                 switch(popValue){
-                     case 'F':push('F');break;
-                     case 'L':push('R');break;
-                     case 'R':push('L');break;
+                     case 'F':push('F'); break;
+                     case 'L':push('R'); break;
+                     case 'R':push('L'); break;
                 }
                 exploredSet=1; 
             }   
@@ -881,51 +873,49 @@ void explore(){
             
         case 'R':                         
         case 'L':
-                switch(direction) {
-                        case NORTH:
-                                if(((maze[x-1][y] < maze[x+1][y]) && (left_prox < 40))){ 
-                    left_stationary_turn();
-                    which_turn = 'L';
-                                        }
-                else {
-                    right_stationary_turn();
-                    which_turn = 'R';
-                        }
-                        break;                      
-                        case SOUTH:
-                if(((maze[x+1][y] < maze[x-1][y]) && (left_prox < 40))){ 
-                    left_stationary_turn(); 
-                    which_turn = 'L';
-                                        }
-                else {
-                    right_stationary_turn();
-                    which_turn = 'R';
+            switch(direction) {
+                case NORTH:
+                
+                    if (((maze[x-1][y] < maze[x+1][y]) && (left_prox < 40))) { 
+                        left_stationary_turn();
+                        which_turn = 'L';
+                    } else {
+                        right_stationary_turn();
+                        which_turn = 'R';
+                    }
+                    break;                      
+                case SOUTH:
+                    if (((maze[x+1][y] < maze[x-1][y]) && (left_prox < 40))) { 
+                        left_stationary_turn(); 
+                        which_turn = 'L';
+                    } else {
+                        right_stationary_turn();
+                        which_turn = 'R';
                     }                         
-                                                break;                       
-                        case EAST:
-                if(((maze[x][y+1] < maze[x][y-1]) && (left_prox < 40))){ 
-                    left_stationary_turn();
-                    which_turn = 'L';
-                                        }
-                else {
-                    right_stationary_turn();
-                    which_turn = 'R';
+                    break;                       
+                case EAST:
+                    if (((maze[x][y+1] < maze[x][y-1]) && (left_prox < 40))) { 
+                        left_stationary_turn();
+                        which_turn = 'L';
+                    } else {
+                        right_stationary_turn();
+                        which_turn = 'R';
                     }                         
-                                                break;
-                        case WEST:
-                if(((maze[x][y-1] < maze[x][y+1]) && (left_prox < 40))){ 
-                    left_stationary_turn();
-                    which_turn = 'L';
-                                        }
-                else {
-                    right_stationary_turn();
-                    which_turn = 'R';
+                    break;
+                case WEST:
+                    if (((maze[x][y-1] < maze[x][y+1]) && (left_prox < 40))){ 
+                        left_stationary_turn();
+                        which_turn = 'L';
+                    } else {
+                        right_stationary_turn();
+                        which_turn = 'R';
                     }                        
-                                                break;
-                }
-                if(which_turn == 'R'){
-            DATWRT4('R');
-            if (direction == NORTH) {
+                    break;
+            }
+            
+            if (which_turn == 'R') {
+                DATWRT4('R');
+                if (direction == NORTH) {
                    direction = EAST;
                 } else if ((direction == EAST)) {
                   direction = SOUTH;
@@ -934,23 +924,19 @@ void explore(){
                 } else if ((direction == WEST) ) {
                   direction = NORTH;
                 }       
-        
-                }else if(which_turn == 'L'){
-                        DATWRT4('L');
-                        if (direction == NORTH) {
-                                direction = WEST;
-                            } else if ((direction == EAST)) {
-                                direction = NORTH;
-                            } else if ((direction == SOUTH) ) {
-                               direction = EAST;
-                            } else if ((direction == WEST) ) {
-                              direction = SOUTH;
-                            }
-        
-                }
-                
-               break;
-        
+            } else if (which_turn == 'L') {
+                DATWRT4('L');
+                if (direction == NORTH) {
+                        direction = WEST;
+                    } else if ((direction == EAST)) {
+                        direction = NORTH;
+                    } else if ((direction == SOUTH) ) {
+                       direction = EAST;
+                    } else if ((direction == WEST) ) {
+                      direction = SOUTH;
+                    }
+                } 
+        break;        
     }
     
     
