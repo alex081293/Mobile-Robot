@@ -102,14 +102,13 @@ static int PDREAD = 5.25;
 static char right_chars[8] ={0xC0, 0x40, 0x60, 0x20, 0x30, 0x10, 0x90, 0x80};
 static char left_chars[8] = {0x08, 0x09, 0x01, 0x03, 0x02, 0x06, 0x04, 0x0C};
 
-void MSDelay(unsigned int itime)
-{
+void MSDelay(unsigned int itime) {
   unsigned int i; unsigned int j;
   for(i=0;i<itime;i++)
   for(j=0;j<1000;j++);
 }
-  void COMWRT4(unsigned char command)
-  {
+
+void COMWRT4(unsigned char command) {
         unsigned char x;
         
         x = (command & 0xF0) >> 2;         //shift high nibble to center of byte for Pk5-Pk2
@@ -129,50 +128,48 @@ void MSDelay(unsigned int itime)
         MSDelay(5);
         LCD_CTRL = LCD_CTRL & ~EN;         //drop enable to capture command
         MSDelay(15);
-  }
+}
 
-  void DATWRT4(unsigned char data)
-  {
-    unsigned char x;
-
-        x = (data & 0xF0) >> 2;
-        LCD_DATA =LCD_DATA & ~0x3C;                     
-        LCD_DATA = LCD_DATA | x;
-        MSDelay(1);
-        LCD_CTRL = LCD_CTRL | RS;
-        MSDelay(1);
-        LCD_CTRL = LCD_CTRL | EN;
-        MSDelay(1);
-        LCD_CTRL = LCD_CTRL & ~EN;
-        MSDelay(5);
-       
-        x = (data & 0x0F)<< 2;
-        LCD_DATA =LCD_DATA & ~0x3C;                     
-        LCD_DATA = LCD_DATA | x;
-        LCD_CTRL = LCD_CTRL | EN;
-        MSDelay(1);
-        LCD_CTRL = LCD_CTRL & ~EN;
-        MSDelay(15);
-  }
+void DATWRT4(unsigned char data) {
+  	unsigned char x
+    x = (data & 0xF0) >> 2;
+    LCD_DATA =LCD_DATA & ~0x3C;                     
+    LCD_DATA = LCD_DATA | x;
+    MSDelay(1);
+    LCD_CTRL = LCD_CTRL | RS;
+    MSDelay(1);
+    LCD_CTRL = LCD_CTRL | EN;
+    MSDelay(1);
+    LCD_CTRL = LCD_CTRL & ~EN;
+    MSDelay(5);
+   
+    x = (data & 0x0F)<< 2;
+    LCD_DATA =LCD_DATA & ~0x3C;                     
+    LCD_DATA = LCD_DATA | x;
+    LCD_CTRL = LCD_CTRL | EN;
+    MSDelay(1);
+    LCD_CTRL = LCD_CTRL & ~EN;
+    MSDelay(15);
+}
 
 void resetFilters() {
 
-        for(i = 0; i < 8; i++) {
-              front_filter[i] = ATD0DR2H;
-              left_filter[i] = ATD0DR1H;
-              right_filter[i] = ATD0DR0H;
-        }
-        
-        front_prox = (front_filter[0] + front_filter[1] + front_filter[2] + front_filter[3] + front_filter[4] + front_filter[5] + front_filter[6] + front_filter[7])/8;
-        left_prox = (left_filter[0] + left_filter[1] + left_filter[2] + left_filter[3] + left_filter[4] + left_filter[5] + left_filter[6] + left_filter[7])/8;
-        right_prox = (right_filter[0] + right_filter[1] + right_filter[2] + right_filter[3] + right_filter[4] + right_filter[5] + right_filter[6] + right_filter[7])/8;
+    for(i = 0; i < 8; i++) {
+        front_filter[i] = ATD0DR2H;
+        left_filter[i] = ATD0DR1H;
+        right_filter[i] = ATD0DR0H;
+    }
+    
+    front_prox = (front_filter[0] + front_filter[1] + front_filter[2] + front_filter[3] + front_filter[4] + front_filter[5] + front_filter[6] + front_filter[7])/8;
+    left_prox = (left_filter[0] + left_filter[1] + left_filter[2] + left_filter[3] + left_filter[4] + left_filter[5] + left_filter[6] + left_filter[7])/8;
+    right_prox = (right_filter[0] + right_filter[1] + right_filter[2] + right_filter[3] + right_filter[4] + right_filter[5] + right_filter[6] + right_filter[7])/8;
 }
         
 
 // Software wait                    
 void wait(int time) {
-        while ((wait_count % time) != 0) {}
-        wait_count = 0;
+    while ((wait_count % time) != 0) {}
+    wait_count = 0;
 }
 
 // Helps our 
@@ -255,24 +252,22 @@ void u_turn(){
 }
        
 
-char pop(){
-        char temp = stack[sTop - 1];
-        stack[sTop - 1] = ' ';
-        sTop--;
+char pop() {
+    char temp = stack[sTop - 1];
+    stack[sTop - 1] = ' ';
+    sTop--;
 
-        return temp;
-      
+    return temp;     
 }
 
-int push(char temp){
-        if(sTop == 99)
-        return 0;//Fail, to big for array
-        
-        stack[sTop++] = temp;
-        return 1;
+int push(char temp) {
+    if(sTop == 99) return 0;//Fail, to big for array
+    
+    stack[sTop++] = temp;
+    return 1;
 }
 
-void explore(){
+void explore() {
     int oldDirection = direction;
     int exploredSet = 0;
     int exploreFlag = 0;
@@ -313,13 +308,13 @@ void explore(){
     COMWRT4(0x01); // Clears display
     MSDelay(1);
     DATWRT4(' ');
-    if(right_prox>40) {
+    if (right_prox>40) {
         DATWRT4('|');
     }
     else {
         DATWRT4(' '); 
     }
-    if(front_prox>40) {
+    if (front_prox>40) {
         DATWRT4('-');
     }
     else {
@@ -331,37 +326,37 @@ void explore(){
     else {
         DATWRT4(' ');
     }
-    if(mazeTurn[x][y] == -1) {
+    if (mazeTurn[x][y] == -1) {
        mazeTurn[x][y] = 0;
        if(front_prox<40) mazeTurn[x][y]++;
        if(left_prox<40) mazeTurn[x][y]++;
        if(right_prox<40) mazeTurn[x][y]++;
     }
-    if(x == 3 && y == 4) {
+    if (x == 3 && y == 4) {
         if(direction == EAST && front_prox < 40) { forward(STATIONARYDISTANCE); x++; doNotMove = 1;}
         if(direction == NORTH && right_prox < 40) { right_stationary_turn(); direction = EAST;  forward(STATIONARYDISTANCE); x++;  explore(); }
         if(direction == SOUTH && left_prox < 40) { left_stationary_turn(); direction = EAST; forward(STATIONARYDISTANCE); x++; explore(); }
     }
     
-    if(x == 5 && y == 4) {
+    if (x == 5 && y == 4) {
         if(direction == WEST && front_prox < 40) { forward(STATIONARYDISTANCE); x--;  doNotMove = 1;}
         if(direction == SOUTH && right_prox < 40) { right_stationary_turn(); direction = WEST; forward(STATIONARYDISTANCE); x--; explore(); }
         if(direction == NORTH && left_prox < 40) { left_stationary_turn(); direction = WEST; forward(STATIONARYDISTANCE); x--; explore(); }
     }
     
-    if(x == 4 && y == 5) {
+    if (x == 4 && y == 5) {
         if(direction == SOUTH && front_prox < 40) { forward(STATIONARYDISTANCE); y--; doNotMove = 1;}
         if(direction == WEST && left_prox < 40) { left_stationary_turn(); direction = SOUTH; forward(STATIONARYDISTANCE); y--; explore(); }
         if(direction == EAST && right_prox < 40) { right_stationary_turn(); direction = NORTH; forward(STATIONARYDISTANCE); y--; explore(); }
     }
     
-    if(x == 4 && y == 3) {
+    if (x == 4 && y == 3) {
         if(direction == NORTH && front_prox < 40) { forward(STATIONARYDISTANCE); y++;  doNotMove = 1;}
         if(direction == EAST && left_prox < 40) { left_stationary_turn(); direction = NORTH; forward(STATIONARYDISTANCE); y++; explore(); }
         if(direction == WEST && right_prox < 40) { right_stationary_turn(); direction = NORTH; forward(STATIONARYDISTANCE); y++; explore(); }
     }
     
-    if(x==4 && y == 4) {
+    if (x==4 && y == 4) {
         u_turn(); COMWRT4(0x10); DATWRT4('G');DATWRT4('O');DATWRT4('A');DATWRT4('L');  for(i=0; i<10; i++){if(i==8) i= 0;u_turn(); u_turn(); PORTK = 0x181; }
     }
     
@@ -507,88 +502,106 @@ void explore(){
         }
   
         else if ((direction == EAST) && (maze[x+1][y] == -1)) {
-                 if(right_prox > 40 && left_prox > 40 && explored[x][y] != 1){
-                        explored[x][y] = 1;
-                        if(exploredSet ==0){
-                                popValue = pop();
-                                switch(popValue){
-                                         case 'F':push('F');break;
-                                         case 'L':push('R');break;
-                                         case 'R':push('L');break;
-                                }
-                        }
-                        exploredSet=1;
+            if(right_prox > 40 && left_prox > 40 && explored[x][y] != 1){
+                explored[x][y] = 1;
+                if(exploredSet ==0){
+                popValue = pop();
+                    switch(popValue){
+                        case 'F':
+                        	push('F');
+                        	break;
+                        case 'L':
+                        	push('R');
+                        	break;
+                        case 'R':
+                        	push('L');
+                        	break;
+                    }
                 }
-                mazeTurn[x][y]--;
-                maze[x][y] = ++distance;               
-                x++;
-                makeTurnFlag = 1; 
+                exploredSet=1;
+            }
+            mazeTurn[x][y]--;
+            maze[x][y] = ++distance;               
+            x++;
+            makeTurnFlag = 1; 
         }
         else if ((direction == SOUTH) && (maze[x][y-1] == -1)) {
-                 if(right_prox > 40 && left_prox > 40 && explored[x][y] != 1){
-                        explored[x][y] = 1;
-                        if(exploredSet ==0){
-                                popValue = pop();
-                                switch(popValue){
-                                         case 'F':push('F');break;
-                                         case 'L':push('R');break;
-                                         case 'R':push('L');break;
-                                }
-                        }
-                        exploredSet=1;
-                 }
-                 mazeTurn[x][y]--;
-                maze[x][y] = ++distance;
-                y--;
-                makeTurnFlag = 1;
+             if(right_prox > 40 && left_prox > 40 && explored[x][y] != 1){
+                explored[x][y] = 1;
+                if(exploredSet ==0){
+                    popValue = pop();
+                    switch(popValue){
+                        case 'F':
+                        	push('F');
+                        	break;
+                        case 'L':
+                        	push('R');
+                        	break;
+                        case 'R':
+                        	push('L');
+                        	break;
+                    }
+                }
+                exploredSet=1;
+            }
+            mazeTurn[x][y]--;
+            maze[x][y] = ++distance;
+            y--;
+            makeTurnFlag = 1;
         }
         
         else if ((direction == WEST) && (maze[x-1][y] == -1)) {
-                if(right_prox > 40 && left_prox > 40 && explored[x][y] != 1){
-                        explored[x][y] = 1;
-                        
-                        if(exploredSet ==0){
-                                popValue = pop();
-                                switch(popValue){
-                                         case 'F':push('F');break;
-                                         case 'L':push('R');break;
-                                         case 'R':push('L');break;  
-                                }
-                        }
-                        exploredSet=1;
-                        
+            if(right_prox > 40 && left_prox > 40 && explored[x][y] != 1){
+                explored[x][y] = 1;
+                
+                if(exploredSet ==0){
+                    popValue = pop();
+                    switch(popValue){
+                    	case 'F':
+                    		push('F');
+                    		break;
+                    	case 'L':
+                    		push('R');
+                    		break;
+                    	case 'R':
+                    		push('L');
+                    		break;  
+                    }
                 }
-                mazeTurn[x][y]--;
-                maze[x][y] = ++distance;
-                x--;
-                makeTurnFlag = 1;
+                exploredSet=1;         
+            }
+            mazeTurn[x][y]--;
+            maze[x][y] = ++distance;
+            x--;
+            makeTurnFlag = 1;
         }
                 
-        if(makeTurnFlag == 1) {
-                DATWRT4('F');
-        
-                DATWRT4(' ');
-                position = sprintf(digits,"%d", maze[x][y]);
-                DATWRT4(digits[0]);
+        if (makeTurnFlag == 1) {
+            DATWRT4('F');
+    
+            DATWRT4(' ');
+            position = sprintf(digits,"%d", maze[x][y]);
+            DATWRT4(digits[0]);
+            
+            push('F');
+            directionMaze[x][y] = direction;
+            tracebackFlag = 1;
+            forward(STATIONARYDISTANC
+            explore();
+            if (explored[x][y] ==0 || mazeTurn[oldX][oldY]>0) {
                 
-                push('F');
-                directionMaze[x][y] = direction;
-                tracebackFlag = 1;
-                forward(STATIONARYDISTANCE);
-
+                if(exploreFlag == 1) {
+                    explored[oldX][oldY] = 1;
+                }
+                
                 explore();
-                if(explored[x][y] ==0 || mazeTurn[oldX][oldY]>0) {
-                    if(exploreFlag == 1) {
-                        explored[oldX][oldY] = 1;
-                    }
-                   explore();
-                   
-                   resetFilters();
-                   wait(100);
-                }          
-                
+               
                 resetFilters();
-                makeTurnFlag = 0;
+                wait(100);
+            }          
+            
+            resetFilters();
+            makeTurnFlag = 0;
        }
     }
     
@@ -601,62 +614,64 @@ void explore(){
     if(left_prox < 40){
         int makeTurnFlagL = 0;
         switch(direction) {
-                case NORTH:
-                        if(((maze[x-1][y] != -1) || (left_prox > 40)) && ((maze[x+1][y] != -1) || (right_prox > 40)) && (explored[x][y] != 1)){                                
-                                explored[x][y] = 1;
-                                if(exploredSet ==0){
-                                        popValue = pop();
-                                        switch(popValue){
-                                                case 'F':push('F');break;
-                                                case 'L':push('R');break;
-                                                case 'R':push('L');break;
-                                        }
-                                }
-                                exploredSet=1;
+            case NORTH:
+                if(((maze[x-1][y] != -1) || (left_prox > 40)) && ((maze[x+1][y] != -1) || (right_prox > 40)) && (explored[x][y] != 1)){                                
+                    explored[x][y] = 1;
+                    if(exploredSet ==0){
+                        popValue = pop();
+                        switch(popValue){
+                            case 'F':push('F');break;
+                            case 'L':push('R');break;
+                            case 'R':push('L');break;
                         }
-                        break;
-                case SOUTH:
-                         if(((maze[x-1][y] != -1) || (right_prox > 40)) && ((maze[x+1][y] != -1) || (left_prox > 40)) && (explored[x][y] != 1)){
-                                explored[x][y] = 1;
-                                if(exploredSet ==0){
-                                        popValue = pop();
-                                        switch(popValue){
-                                                case 'F':push('F');break;
-                                                case 'L':push('R');break;
-                                                case 'R':push('L');break;
-                                        }
-                                }
-                                exploredSet=1;
+                    }
+                    exploredSet=1;
+                }
+                break;
+            case SOUTH:
+                 if(((maze[x-1][y] != -1) || (right_prox > 40)) && ((maze[x+1][y] != -1) || (left_prox > 40)) && (explored[x][y] != 1)){
+                    explored[x][y] = 1;
+                    if(exploredSet ==0){
+                        popValue = pop();
+                        switch(popValue){
+                            case 'F':push('F');break;
+                            case 'L':push('R');break;
+                            case 'R':push('L');break;
                         }
-                        break;                       
-                case EAST:
-                         if(((maze[x][y-1] != -1) || (right_prox > 40)) && ((maze[x][y+1] != -1) || (left_prox > 40)) && (explored[x][y] != 1)) {
-                                explored[x][y] = 1;
-                                if(exploredSet ==0){
-                                        popValue = pop();
-                                        switch(popValue){
-                                                case 'F':push('F');break;
-                                                case 'L':push('R');break;
-                                                case 'R':push('L');break;
-                                        }
-                                }
-                                exploredSet=1;
-                         }
-                        break;
-                case WEST:
-                        if(((maze[x][y-1] != -1) || (right_prox > 40))&& ((maze[x][y+1] != -1) || (right_prox > 40)) && (explored[x][y] != 1)) {
-                                explored[x][y] = 1;
-                                if(exploredSet ==0){
-                                        popValue = pop();
-                                        switch(popValue){
-                                                case 'F':push('F');break;
-                                                case 'L':push('R');break;
-                                                case 'R':push('L');break;
-                                        }
-                                }
-                                exploredSet=1;
+                    }
+                    exploredSet=1;
+                }
+                break;                       
+            case EAST:
+                 if(((maze[x][y-1] != -1) || (right_prox > 40)) && ((maze[x][y+1] != -1) || (left_prox > 40)) && (explored[x][y] != 1)) {
+                    explored[x][y] = 1;
+                    if(exploredSet ==0){
+                        popValue = pop();
+                        switch(popValue){
+                            case 'F':push('F');break;
+                            case 'L':push('R');break;
+                            case 'R':push('L');break;
                         }
-                        break;
+                    }
+                    exploredSet=1;
+                 }
+                break;
+            case WEST:
+                if(((maze[x][y-1] != -1) || (right_prox > 40))&& ((maze[x][y+1] != -1) || (right_prox > 40)) && (explored[x][y] != 1)) {
+                    explored[x][y] = 1;
+                    if(exploredSet ==0){
+                        popValue = pop();
+                        switch(popValue){
+                            case 'F':push('F');break;
+                            case 'L':push('R');break;
+                            case 'R':push('L');break;
+                        }
+                    }
+                    exploredSet=1;
+                }
+                break;
+            default:
+            	break;
         }
         
        
@@ -723,7 +738,7 @@ void explore(){
                 }
             }    
         }
-        if(makeTurnFlagL == 1){
+        if (makeTurnFlagL == 1) {
             push('L');
             DATWRT4('L');
             left_stationary_turn();
@@ -747,13 +762,13 @@ void explore(){
         }
     }
     
-    if(right_prox < 40){
+    if (right_prox < 40) {
         int makeTurnFlagR = 0; 
         if (explored[x][y] != 1){
             explored[x][y] = 1;
-            if(exploredSet ==0){
+            if(exploredSet ==0) {
                 popValue = pop();
-                switch(popValue){
+                switch(popValue) {
                      case 'F':push('F'); break;
                      case 'L':push('R'); break;
                      case 'R':push('L'); break;
@@ -770,23 +785,23 @@ void explore(){
         } else if ((direction == WEST) && (maze[x][y+1] == -1)) { 
                 makeTurnFlagR = 1;
         }
-       if((makeTurnFlagR == 1)){
-                DATWRT4('R');
-                push('R');
-                right_stationary_turn();
-                if (direction == NORTH) {
-                       direction = EAST;
-                    } else if ((direction == EAST)) {
-                      direction = SOUTH;
-                    } else if ((direction == SOUTH) ) {
-                       direction = WEST;
-                    } else if ((direction == WEST) ) {
-                      direction = NORTH;
-                    }
+       if (makeTurnFlagR == 1) {
+            DATWRT4('R');
+            push('R');
+            right_stationary_turn();
+            if (direction == NORTH) {
+                   direction = EAST;
+                } else if ((direction == EAST)) {
+                  direction = SOUTH;
+                } else if ((direction == SOUTH) ) {
+                   direction = WEST;
+                } else if ((direction == WEST) ) {
+                  direction = NORTH;
+                }
 
-                explore();
-                resetFilters();
-                makeTurnFlag = 0;
+            explore();
+            resetFilters();
+            makeTurnFlag = 0;
        }
     }
 
@@ -851,16 +866,16 @@ void explore(){
         case 'F':
             distance--;   
             if ((direction == NORTH)) {
-                    y++;
+                y++;
             }
             else if ((direction == EAST)) {
-                    x++;
+                x++;
             }
             else if ((direction == SOUTH)) {
-                    y--;
+                y--;
             }
             else if ((direction == WEST)) {
-                    x--;
+                x--;
             }
             COMWRT4(0x01); // Clears display
             MSDelay(1);
@@ -905,7 +920,6 @@ void explore(){
         case 'L':
             switch(direction) {
                 case NORTH:
-                
                     if (((maze[x-1][y] < maze[x+1][y]) && (left_prox < 40))) { 
                         left_stationary_turn();
                         which_turn = 'L';
@@ -967,12 +981,8 @@ void explore(){
                     }
                 } 
         break;        
-    }
-    
-    
-     
-        
- }
+    }     
+}
 
 void main(void) {
     int j=0;
@@ -1059,13 +1069,12 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
     front_prox = (front_filter[0] + front_filter[1] + front_filter[2] + front_filter[3] + front_filter[4] + front_filter[5] + front_filter[6] + front_filter[7])/8;
     left_prox = (left_filter[0] + left_filter[1] + left_filter[2] + left_filter[3] + left_filter[4] + left_filter[5] + left_filter[6] + left_filter[7])/8;
     right_prox = (right_filter[0] + right_filter[1] + right_filter[2] + right_filter[3] + right_filter[4] + right_filter[5] + right_filter[6] + right_filter[7])/8;
-    if (i >= 8) i = 0;
     
+    if (i >= 8) i = 0;
 
     previousErrorR = currentErrorR;
     currentErrorR = ideal_distance - right_prox;
     errorDirR = currentErrorR - previousErrorR;
-
 
     previousErrorL = currentErrorL;
     currentErrorL = ideal_distance - left_prox;
@@ -1073,103 +1082,109 @@ interrupt VectorNumber_Vtimmdcu void mdcuInterrupt () {
 
     //read_count = 0;
     
-     if(right_prox > 40 && left_prox > 40) ideal_distance = (right_prox+left_prox)/2;
+     if (right_prox > 40 && left_prox > 40) ideal_distance = (right_prox+left_prox)/2;
      else ideal_distance = 64;
-     if((read_count%PDREAD)==0 && turn_flag!=1){    
-     if(lastWall == LEFT) { 
-                  read_count = 0;               
-                  if(left_prox > max_wall_distance && turn_flag != 1) {
-                         lastWall = LEFT;
-                        if(left_prox < ideal_distance) {//Too far from left wall
-                                right_speed_final = MAX_SPEED;
-                                left_speed_final = MAX_SPEED + (p_value * (ideal_distance - left_prox)) + (d_value * errorDirL);
-                        } else {
-                                left_speed_final  = MAX_SPEED;//Too close to wall
-                                right_speed_final  = MAX_SPEED + (-p_value * ( ideal_distance - left_prox)) + (-d_value * errorDirL);
-                        }
-                  } else if(left_prox < max_wall_distance && right_prox > max_wall_distance && turn_flag!=1) {
-                        lastWall = RIGHT;
-                        if (right_prox < (ideal_distance)){//If too far from right wall correct        
-                                left_speed_final  = MAX_SPEED;
-                                right_speed_final  = MAX_SPEED +(p_value * (ideal_distance - right_prox)) + (d_value * errorDirR); 
-                        } else{     //If too close to right wall correct   
-                                right_speed_final  = MAX_SPEED;
-                                left_speed_final  = MAX_SPEED +(-p_value * (ideal_distance - right_prox)) + (-d_value * errorDirR); 
-                        }
-                 } else right_speed_final = left_speed_final = MAX_SPEED;
-     }
-        if(lastWall == RIGHT) { 
-            if(right_prox > max_wall_distance && turn_flag != 1) {
-                 lastWall = RIGHT;
-                 if(right_prox < ideal_distance) {
-                       left_speed_final  = MAX_SPEED;
-                       right_speed_final  = MAX_SPEED +(p_value * (ideal_distance - right_prox)) + (d_value * errorDirR);
-                 } else {     //If too close to right wall correct   
-                       right_speed_final  = MAX_SPEED;
-                       left_speed_final  = MAX_SPEED +(-p_value * (ideal_distance - right_prox)) + (-d_value * errorDirR);
-                 }
-              } else if(right_prox < max_wall_distance && left_prox > max_wall_distance && turn_flag != 1) {
-                 lastWall = LEFT;
-                 if(left_prox < ideal_distance) {
-                        right_speed_final = MAX_SPEED;
-                        left_speed_final = MAX_SPEED + (p_value * (ideal_distance - left_prox)) + (d_value * errorDirL);
-                 } else {
-                        left_speed_final  = MAX_SPEED;
-                        right_speed_final  = MAX_SPEED +(-p_value * ( ideal_distance - left_prox)) + (-d_value * errorDirL);
-                 }
-            } else right_speed_final = left_speed_final = MAX_SPEED;     
+     if ((read_count % PDREAD) ==0 && turn_flag!=1) {    
+    	if (lastWall == LEFT) { 
+    	             read_count = 0;               
+    	             if(left_prox > max_wall_distance && turn_flag != 1) {
+    	                    lastWall = LEFT;
+    	                   if(left_prox < ideal_distance) {//Too far from left wall
+    	                           right_speed_final = MAX_SPEED;
+    	                           left_speed_final = MAX_SPEED + (p_value * (ideal_distance - left_prox)) + (d_value * errorDirL);
+    	                   } else {
+    	                           left_speed_final  = MAX_SPEED;//Too close to wall
+    	                           right_speed_final  = MAX_SPEED + (-p_value * ( ideal_distance - left_prox)) + (-d_value * errorDirL);
+    	                   }
+    	             } else if(left_prox < max_wall_distance && right_prox > max_wall_distance && turn_flag!=1) {
+    	                   lastWall = RIGHT;
+    	                   if (right_prox < (ideal_distance)){//If too far from right wall correct        
+    	                           left_speed_final  = MAX_SPEED;
+    	                           right_speed_final  = MAX_SPEED +(p_value * (ideal_distance - right_prox)) + (d_value * errorDirR); 
+    	                   } else{     //If too close to right wall correct   
+    	                           right_speed_final  = MAX_SPEED;
+    	                           left_speed_final  = MAX_SPEED +(-p_value * (ideal_distance - right_prox)) + (-d_value * errorDirR); 
+    	                   }
+    	            } else right_speed_final = left_speed_final = MAX_SPEED;
+    	}
+	    if (lastWall == RIGHT) { 
+	        if (right_prox > max_wall_distance && turn_flag != 1) {
+	            lastWall = RIGHT;
+	            if (right_prox < ideal_distance) {
+	                left_speed_final = MAX_SPEED;
+	                right_speed_final = MAX_SPEED +(p_value * (ideal_distance - right_prox)) + (d_value * errorDirR);
+	            } else {     //If too close to right wall correct   
+	                right_speed_final = MAX_SPEED;
+	                left_speed_final = MAX_SPEED +(-p_value * (ideal_distance - right_prox)) + (-d_value * errorDirR);
+	            }
+	        } else if (right_prox < max_wall_distance && left_prox > max_wall_distance && turn_flag != 1) {
+            	lastWall = LEFT;
+             	if (left_prox < ideal_distance) {
+                    right_speed_final = MAX_SPEED;
+                    left_speed_final = MAX_SPEED + (p_value * (ideal_distance - left_prox)) + (d_value * errorDirL);
+             	} else {
+                    left_speed_final  = MAX_SPEED;
+                    right_speed_final  = MAX_SPEED +(-p_value * ( ideal_distance - left_prox)) + (-d_value * errorDirL);
+             	}
+	        } else right_speed_final = left_speed_final = MAX_SPEED;     
         }
     }
     
     // Ramping   
-    if (ramp_count == rampCoef){
+    if (ramp_count == rampCoef) {
          
-        if(right_speed < right_speed_final){
+        if (right_speed < right_speed_final) {
             right_speed +=1;    //slow it down
-        }else if(right_speed>right_speed_final){
+        }else if (right_speed>right_speed_final) {
             right_speed -=1;    //speed it up
         }  
-        if(left_speed < left_speed_final){
+        if (left_speed < left_speed_final) {
             left_speed +=1;    //slow it down
-        }else if(left_speed>left_speed_final){
+        }else if (left_speed>left_speed_final) {
             left_speed -=1;    //speed it up
         }        
         ramp_count = 0;
     }
     
-    if(left_wheel_backwards != 0 && left_wheel_backwards != 1){ left_wheel_backwards = 0; left_speed = 150;}
-    if(right_wheel_backwards != 0 && right_wheel_backwards != 1){ right_wheel_backwards = 0; right_speed =150;}
+    if (left_wheel_backwards != 0 && left_wheel_backwards != 1) { 
+    	left_wheel_backwards = 0; 
+    	left_speed = 150;
+    }
+    if (right_wheel_backwards != 0 && right_wheel_backwards != 1) { 
+    	right_wheel_backwards = 0; 
+    	right_speed =150;
+    }
 
     //Increment Left Wheel
-    if(left_count>=left_speed){
-        if(left_wheel_backwards <= 0){//Forwards
+    if (left_count>=left_speed) {
+        if (left_wheel_backwards <= 0) {//Forwards
             leftPos++;
-            if(leftPos>7)leftPos = 0;
+            if( leftPos>7) leftPos = 0;
             left_count=0;
             left_step_count--;
-        }else if(left_wheel_backwards >= 1){//Backwards
+        } else if (left_wheel_backwards >= 1) {//Backwards
             leftPos--;
-            if(leftPos<0)leftPos = 8;
+            if (leftPos<0) leftPos = 8;
             left_count=0;
             left_step_count--;
         }
     }
      
     //Increment Right Wheel
-    if(right_count>=right_speed){
-        if(right_wheel_backwards <= 0){//Forwards 
+    if (right_count>=right_speed) {
+        if (right_wheel_backwards <= 0) {//Forwards 
             rightPos++;
-            if(rightPos>7)rightPos = 0;
+            if (rightPos>7) rightPos = 0;
             right_count=0;
             right_step_count--;
-        }else if(right_wheel_backwards >= 1){//Backwards
+        }else if (right_wheel_backwards >= 1) {//Backwards
             rightPos--;
-            if(rightPos<0) rightPos = 8;
+            if (rightPos<0) rightPos = 8;
             right_count=0;
             right_step_count--;
         }
     }
      
   
-  if(doNotMove != 1) PORTB = left_chars[leftPos] + right_chars[rightPos];
+  if (doNotMove != 1) PORTB = left_chars[leftPos] + right_chars[rightPos];
 }
